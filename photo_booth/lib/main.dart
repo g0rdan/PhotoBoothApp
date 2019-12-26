@@ -71,41 +71,224 @@ class _MyHomePageState extends State<MyHomePage> {
         // the App.build method, and use it to set our appbar title.
         title: Text(widget.title),
       ),
-      body: Center(
-        // Center is a layout widget. It takes a single child and positions it
-        // in the middle of the parent.
+      body: Padding(
+        padding: EdgeInsets.all(8.0),
         child: Column(
-          // Column is also a layout widget. It takes a list of children and
-          // arranges them vertically. By default, it sizes itself to fit its
-          // children horizontally, and tries to be as tall as its parent.
-          //
-          // Invoke "debug painting" (press "p" in the console, choose the
-          // "Toggle Debug Paint" action from the Flutter Inspector in Android
-          // Studio, or the "Toggle Debug Paint" command in Visual Studio Code)
-          // to see the wireframe for each widget.
-          //
-          // Column has various properties to control how it sizes itself and
-          // how it positions its children. Here we use mainAxisAlignment to
-          // center the children vertically; the main axis here is the vertical
-          // axis because Columns are vertical (the cross axis would be
-          // horizontal).
-          mainAxisAlignment: MainAxisAlignment.center,
           children: <Widget>[
-            Text(
-              'You have pushed the button this many times:',
+            Container(
+              height: 100,
+              padding: const EdgeInsets.only(left: 8.0, right: 8.0),
+              decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(15.0),
+                  color: Colors.greenAccent),
+              child: Stack(
+                children: <Widget>[
+                  Positioned(
+                    right: 10,
+                    top: 20,
+                    child: Row(
+                      children: <Widget>[
+                        Padding(
+                          padding: EdgeInsets.only(right: 10.0),
+                          child: FloatingActionButton(
+                            onPressed: _incrementCounter,
+                            tooltip: 'Choise color',
+                            child: Icon(Icons.color_lens),
+                          ),
+                        ),
+                        Padding(
+                          padding: EdgeInsets.only(right: 0.0),
+                          child: FloatingActionButton(
+                            onPressed: _incrementCounter,
+                            tooltip: 'Take photo',
+                            child: Icon(Icons.photo_camera),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Positioned(
+                    left: 10,
+                    top: 10,
+                    child: Row(
+                      children: <Widget>[
+                        Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: <Widget>[
+                            IconButton(
+                            icon: Icon(Icons.fiber_new),
+                            tooltip: 'Clear work area',
+                            onPressed: () {
+                              setState(() {
+                                // if (selectedMode == SelectedMode.StrokeWidth)
+                                //   showBottomList = !showBottomList;
+                                // selectedMode = SelectedMode.StrokeWidth;
+                              });
+                            }),
+                            Text('New')
+                          ],
+                        ),
+                        Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: <Widget>[
+                            IconButton(
+                            icon: Icon(Icons.save),
+                            tooltip: 'Save work area into file',
+                            onPressed: () {
+                              setState(() {
+                                // if (selectedMode == SelectedMode.StrokeWidth)
+                                //   showBottomList = !showBottomList;
+                                // selectedMode = SelectedMode.StrokeWidth;
+                              });
+                            }),
+                            Text('Save')
+                          ],
+                        ),
+                        Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: <Widget>[
+                            IconButton(
+                            icon: Icon(Icons.undo),
+                            tooltip: 'Undo changes in work area',
+                            onPressed: () {
+                              setState(() {
+                                // if (selectedMode == SelectedMode.StrokeWidth)
+                                //   showBottomList = !showBottomList;
+                                // selectedMode = SelectedMode.StrokeWidth;
+                              });
+                            }),
+                            Text('Undo')
+                          ],
+                        ),
+                      ],
+                    )
+                ),
+              ],
+              )
             ),
-            Text(
-              '$_counter',
-              style: Theme.of(context).textTheme.display1,
-            ),
+            Expanded(
+              child: Padding(
+                padding: EdgeInsets.only(top: 8.0, bottom: 8.0),
+                child: Container(
+                  height: 100,
+                  padding: const EdgeInsets.only(left: 8.0, right: 8.0),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(15.0),
+                    color: Colors.blueAccent
+                  ),
+                ),
+              )
+            )
           ],
-        ),
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _incrementCounter,
-        tooltip: 'Increment',
-        child: Icon(Icons.add),
-      ), // This trailing comma makes auto-formatting nicer for build methods.
+        ) 
+      )
+       
+      
+       
+      
+      // bottomNavigationBar: Padding(
+      //   padding: const EdgeInsets.all(8.0),
+      //   child: Container(
+      //       padding: const EdgeInsets.only(left: 8.0, right: 8.0),
+      //       decoration: BoxDecoration(
+      //           borderRadius: BorderRadius.circular(50.0),
+      //           color: Colors.greenAccent),
+      //       child: Padding(
+      //         padding: const EdgeInsets.all(8.0),
+      //         child: Column(
+      //           mainAxisSize: MainAxisSize.min,
+      //           children: <Widget>[
+      //             Row(
+      //               // mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      //               children: <Widget>[
+
+      //                 Column(
+      //                   mainAxisSize: MainAxisSize.min,
+      //                   children: <Widget>[
+      //                     IconButton(
+      //                     icon: Icon(Icons.fiber_new),
+      //                     tooltip: 'Clear work area',
+      //                     onPressed: () {
+      //                       setState(() {
+      //                         // if (selectedMode == SelectedMode.StrokeWidth)
+      //                         //   showBottomList = !showBottomList;
+      //                         // selectedMode = SelectedMode.StrokeWidth;
+      //                       });
+      //                     }),
+      //                     Text('New')
+      //                   ],
+      //                 ),
+
+      //                 Column(
+      //                   mainAxisSize: MainAxisSize.min,
+      //                   children: <Widget>[
+      //                     IconButton(
+      //                     icon: Icon(Icons.save),
+      //                     tooltip: 'Save work area into file',
+      //                     onPressed: () {
+      //                       setState(() {
+      //                         // if (selectedMode == SelectedMode.StrokeWidth)
+      //                         //   showBottomList = !showBottomList;
+      //                         // selectedMode = SelectedMode.StrokeWidth;
+      //                       });
+      //                     }),
+      //                     Text('Save')
+      //                   ],
+      //                 ),
+
+      //                 Column(
+      //                   mainAxisSize: MainAxisSize.min,
+      //                   children: <Widget>[
+      //                     IconButton(
+      //                     icon: Icon(Icons.undo),
+      //                     tooltip: 'Undo changes in work area',
+      //                     onPressed: () {
+      //                       setState(() {
+      //                         // if (selectedMode == SelectedMode.StrokeWidth)
+      //                         //   showBottomList = !showBottomList;
+      //                         // selectedMode = SelectedMode.StrokeWidth;
+      //                       });
+      //                     }),
+      //                     Text('Undo')
+      //                   ],
+      //                 ),
+
+      //               ],
+      //             )
+      //             // Visibility(
+      //             //   child: (selectedMode == SelectedMode.Color)
+      //             //       ? Row(
+      //             //           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+      //             //           children: getColorList(),
+      //             //         )
+      //             //       : Slider(
+      //             //           value: (selectedMode == SelectedMode.StrokeWidth)
+      //             //               ? strokeWidth
+      //             //               : opacity,
+      //             //           max: (selectedMode == SelectedMode.StrokeWidth)
+      //             //               ? 50.0
+      //             //               : 1.0,
+      //             //           min: 0.0,
+      //             //           onChanged: (val) {
+      //             //             setState(() {
+      //             //               if (selectedMode == SelectedMode.StrokeWidth)
+      //             //                 strokeWidth = val;
+      //             //               else
+      //             //                 opacity = val;
+      //             //             });
+      //             //           }),
+      //             //   visible: showBottomList,
+      //             // ),
+      //           ],
+      //         ),
+      //       )),
+      // ),
+
+      // floatingActionButton: FloatingActionButton(
+      //   onPressed: _incrementCounter,
+      //   tooltip: 'Increment',
+      //   child: Icon(Icons.add),
+      // ), // This trailing comma makes auto-formatting nicer for build methods.
     );
   }
 }
