@@ -4,8 +4,17 @@ import 'package:scoped_model/scoped_model.dart';
 
 class MainModel extends Model {
 
-  List<DrawingPoint> _points = [];
+  CameraPreviewState previewState = CameraPreviewState.empty;
 
+
+  String _currentImagePath;
+  String get currentImagePath => _currentImagePath;
+  set currentImagePath(String path) {
+    print(path);
+    _currentImagePath = path;
+  }
+
+  List<DrawingPoint> _points = [];
   List<DrawingPoint> get points => _points;
 
   void addPoint(DrawingPoint point) {
@@ -24,6 +33,13 @@ class MainModel extends Model {
 
   void clear() {
     _points.clear();
+    previewState = CameraPreviewState.empty;
+    notifyListeners();
+  }
+
+  void setPreviewState(CameraPreviewState newPreviewState) {
+    previewState = newPreviewState;
+    print('state: $previewState');
     notifyListeners();
   }
 }
@@ -36,3 +52,5 @@ class DrawingPoint {
 }
 
 enum SelectedMode { StrokeWidth, Opacity, Color }
+enum CameraPreviewState { empty, preview, image }
+enum ImageSource { fromFile, fromCamera }

@@ -24,6 +24,9 @@ dependencies:
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^0.1.2
   scoped_model: ^1.0.1
+  camera: any
+  path_provider: any
+  path: any
 
 dev_dependencies:
   flutter_test:

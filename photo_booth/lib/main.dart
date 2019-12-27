@@ -1,39 +1,43 @@
 import 'dart:io';
 import 'dart:ui';
 
+import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_colorpicker/flutter_colorpicker.dart';
+// import 'package:flutter_colorpicker/flutter_colorpicker.dart';
+import 'package:path/path.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:scoped_model/scoped_model.dart';
 
 import 'models/main_model.dart';
 
-void main() => runApp(MyApp());
+Future<void> main() async {
+   WidgetsFlutterBinding.ensureInitialized();
+  // Obtain a list of the available cameras on the device.
+  final cameras = await availableCameras();
 
-class MyApp extends StatelessWidget {
-  // This widget is the root of your application.
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Flutter Demo',
+  // Get a specific camera from the list of available cameras.
+  final lastCamera = cameras.last; //cameras.first;
+
+  // runApp(MyApp());
+
+  runApp(
+    MaterialApp(
       theme: ThemeData(
-        // This is the theme of your application.
-        //
-        // Try running your application with "flutter run". You'll see the
-        // application has a blue toolbar. Then, without quitting the app, try
-        // changing the primarySwatch below to Colors.green and then invoke
-        // "hot reload" (press "r" in the console where you ran "flutter run",
-        // or simply save your changes to "hot reload" in a Flutter IDE).
-        // Notice that the counter didn't reset back to zero; the application
-        // is not restarted.
         primarySwatch: Colors.blue,
       ),
-      home: MyHomePage(title: 'Flutter Demo Home Page'),
-    );
-  }
+      home: MyHomePage(
+        title: 'Flutter Demo Home Page',
+        camera: lastCamera
+      )
+    ),
+  );
 }
 
 class MyHomePage extends StatefulWidget {
-  MyHomePage({Key key, this.title}) : super(key: key);
+  final String title;
+  final CameraDescription camera;
+
+  MyHomePage({Key key, this.title, this.camera}) : super(key: key);
 
   // This widget is the home page of your application. It is stateful, meaning
   // that it has a State object (defined below) that contains fields that affect
@@ -44,24 +48,36 @@ class MyHomePage extends StatefulWidget {
   // used by the build method of the State. Fields in a Widget subclass are
   // always marked "final".
 
-  final String title;
 
   @override
   _MyHomePageState createState() => _MyHomePageState();
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  int _counter = 0;
+  CameraController _controller;
+  Future<void> _initializeControllerFuture;
 
-  void _incrementCounter() {
-    setState(() {
-      // This call to setState tells the Flutter framework that something has
-      // changed in this State, which causes it to rerun the build method below
-      // so that the display can reflect the updated values. If we changed
-      // _counter without calling setState(), then the build method would not be
-      // called again, and so nothing would appear to happen.
-      _counter++;
-    });
+  @override
+  void initState() {
+    super.initState();
+    // To display the current output from the Camera,
+    // create a CameraController.
+    _controller = CameraController(
+      // Get a specific camera from the list of available cameras.
+      widget.camera,
+      // Define the resolution to use.
+      ResolutionPreset.medium,
+    );
+
+    // Next, initialize the controller. This returns a Future.
+    _initializeControllerFuture = _controller.initialize();
+  }
+
+   @override
+  void dispose() {
+    // Dispose of the controller when the widget is disposed.
+    _controller.dispose();
+    super.dispose();
   }
 
   @override
@@ -101,18 +117,37 @@ class _MyHomePageState extends State<MyHomePage> {
                             Padding(
                               padding: EdgeInsets.only(right: 10.0),
                               child: FloatingActionButton(
-                                onPressed: _incrementCounter,
+                                // onPressed: _incrementCounter,
                                 tooltip: 'Choise color',
                                 child: Icon(Icons.color_lens),
                               ),
                             ),
                             Padding(
                               padding: EdgeInsets.only(right: 0.0),
-                              child: FloatingActionButton(
-                                onPressed: _incrementCounter,
-                                tooltip: 'Take photo',
-                                child: Icon(Icons.photo_camera),
-                              ),
+                              child: PopupMenuButton<ImageSource>(
+                                child: FloatingActionButton(
+                                  tooltip: 'Take photo',
+                                  child: Icon(Icons.image),
+                                ),
+                                onSelected: (ImageSource result) {
+                                  switch (result) {
+                                    case ImageSource.fromCamera:
+                                      model.setPreviewState(CameraPreviewState.preview);
+                                      break;
+                                    default:
+                                  }
+                                },
+                                itemBuilder: (BuildContext context) => <PopupMenuEntry<ImageSource>>[
+                                  const PopupMenuItem<ImageSource>(
+                                    value: ImageSource.fromCamera,
+                                    child: Text('Open Camera'),
+                                  ),
+                                  const PopupMenuItem<ImageSource>(
+                                    value: ImageSource.fromFile,
+                                    child: Text('Open Photos'),
+                                  ),
+                                ],
+                              )
                             ),
                           ],
                         ),
@@ -187,7 +222,7 @@ class _MyHomePageState extends State<MyHomePage> {
                         borderRadius: BorderRadius.circular(15.0),
                         color: Colors.blueAccent
                       ),
-                      child: Draw(),
+                      child: Draw(_controller),
                     ),
                   )
                 )
@@ -201,7 +236,10 @@ class _MyHomePageState extends State<MyHomePage> {
 }
 
 class Draw extends StatefulWidget {
-  
+  CameraController controller;
+
+  Draw(this.controller);
+
   @override
   _DrawState createState() => _DrawState();
 }
@@ -267,76 +305,99 @@ class _DrawState extends State<Draw> {
               model.points.add(null);
             });
           },
-          child: new Stack(
-            children: <Widget>[
-              new Positioned(
-                left: 50.0,
-                top: 50.0,
-                child: new Icon(Icons.monetization_on, size: 36.0, color: const Color.fromRGBO(218, 165, 32, 1.0))
-              ),
-              CustomPaint(
-                  // key: _globalKey,
-                  size: Size.infinite,
-                  painter: DrawingPainter(
-                    pointsList: model.points,
-                  ),
-                ),
-            ],
-          ),
+          child: _getPreviewWidget(model)
+
+          //  CustomPaint(
+          //   // key: _globalKey,
+          //   size: Size.infinite,
+          //   painter: DrawingPainter(
+          //     pointsList: model.points,
+          //   ),
+          // ),
         )
     );
   }
 
-  getColorList() {
-    List<Widget> listWidget = List();
-    for (Color color in colors) {
-      listWidget.add(colorCircle(color));
-    }
-    Widget colorPicker = GestureDetector(
-      onTap: () {
-        showDialog(
-          context: context,
-          child: AlertDialog(
-            title: const Text('Pick a color!'),
-            content: SingleChildScrollView(
-              child: ColorPicker(
-                pickerColor: pickerColor,
-                onColorChanged: (color) {
-                  pickerColor = color;
-                },
-                enableLabel: true,
-                pickerAreaHeightPercent: 0.8,
-              ),
-            ),
-            actions: <Widget>[
-              FlatButton(
-                child: const Text('Save'),
-                onPressed: () {
-                  setState(() => selectedColor = pickerColor);
-                  Navigator.of(context).pop();
-                },
-              ),
-            ],
-          ),
+  _getPreviewWidget(MainModel model) {
+    switch (model.previewState) {
+      case CameraPreviewState.empty:
+        print('empty preview');
+        return Center(
+          child: Text('Empty screen')
         );
-      },
-      child: ClipOval(
-        child: Container(
-          padding: const EdgeInsets.only(bottom: 16.0),
-          height: 36,
-          width: 36,
-          decoration: BoxDecoration(
-              gradient: LinearGradient(
-            colors: [Colors.red, Colors.green, Colors.blue],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          )),
-        ),
-      ),
-    );
-    listWidget.add(colorPicker);
-    return listWidget;
+        break;
+      case CameraPreviewState.preview:
+        print('camera preview');
+        return CameraView(widget.controller);
+        break;
+      case CameraPreviewState.image:
+        print('draw screen');
+        return Stack(
+          children: <Widget>[
+            DisplayPictureScreen(imagePath: model.currentImagePath),
+            CustomPaint(
+              size: Size.infinite,
+              painter: DrawingPainter(
+                pointsList: model.points,
+              ),
+            )
+          ],
+        );
+        break;
+      default:
+    }
   }
+
+  // getColorList() {
+  //   List<Widget> listWidget = List();
+  //   for (Color color in colors) {
+  //     listWidget.add(colorCircle(color));
+  //   }
+  //   Widget colorPicker = GestureDetector(
+  //     onTap: () {
+  //       showDialog(
+  //         context: context,
+  //         child: AlertDialog(
+  //           title: const Text('Pick a color!'),
+  //           content: SingleChildScrollView(
+  //             child: ColorPicker(
+  //               pickerColor: pickerColor,
+  //               onColorChanged: (color) {
+  //                 pickerColor = color;
+  //               },
+  //               enableLabel: true,
+  //               pickerAreaHeightPercent: 0.8,
+  //             ),
+  //           ),
+  //           actions: <Widget>[
+  //             FlatButton(
+  //               child: const Text('Save'),
+  //               onPressed: () {
+  //                 setState(() => selectedColor = pickerColor);
+  //                 Navigator.of(context).pop();
+  //               },
+  //             ),
+  //           ],
+  //         ),
+  //       );
+  //     },
+  //     child: ClipOval(
+  //       child: Container(
+  //         padding: const EdgeInsets.only(bottom: 16.0),
+  //         height: 36,
+  //         width: 36,
+  //         decoration: BoxDecoration(
+  //             gradient: LinearGradient(
+  //           colors: [Colors.red, Colors.green, Colors.blue],
+  //           begin: Alignment.topLeft,
+  //           end: Alignment.bottomRight,
+  //         )),
+  //       ),
+  //     ),
+  //   );
+  //   listWidget.add(colorPicker);
+  //   return listWidget;
+  // }
 
   Widget colorCircle(Color color) {
     return GestureDetector(
@@ -379,4 +440,71 @@ class DrawingPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(DrawingPainter oldDelegate) => true;
+}
+
+// A widget that displays the picture taken by the user.
+class DisplayPictureScreen extends StatelessWidget {
+  final String imagePath;
+
+  const DisplayPictureScreen({Key key, this.imagePath}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return Image.file(File(imagePath));
+  }
+}
+
+class CameraView extends CameraPreview {
+  CameraView(CameraController controller) : super(controller);
+
+  @override
+  Widget build(BuildContext context) {
+    var baseWidget = super.build(context);
+    return ScopedModelDescendant<MainModel>(
+      builder: (context, _, model) => Stack(
+        children: <Widget>[
+          baseWidget,
+          Align(
+            alignment: Alignment.bottomCenter,
+            child: GestureDetector(
+              onTap: () async {
+                // Take the Picture in a try / catch block. If anything goes wrong,
+                // catch the error.
+                try {
+                  // Ensure that the camera is initialized.
+                  // await _initializeControllerFuture;
+
+                  // Construct the path where the image should be saved using the
+                  // pattern package.
+                  final path = join(
+                    // Store the picture in the temp directory.
+                    // Find the temp directory using the `path_provider` plugin.
+                    (await getTemporaryDirectory()).path,
+                    '${DateTime.now()}.png',
+                  );
+
+                  model.currentImagePath = path;
+
+                  // Attempt to take a picture and log where it's been saved.
+                  await controller.takePicture(model.currentImagePath);
+                  model.setPreviewState(CameraPreviewState.image);
+
+                } catch (e) {
+                  // If an error occurs, log the error to the console.
+                  print(e);
+                }
+              },
+              child: ClipOval(
+                child: Container(
+                  color: Colors.red,
+                  height: 60.0, // height of the button
+                  width: 60.0, // width of the button
+                ),
+              ),
+            ),
+          )
+        ],
+      )
+    );
+  }
 }
