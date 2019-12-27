@@ -27,6 +27,7 @@ dependencies:
   path_provider: any
   path: any
   image_picker: any
+  gallery_saver : any
 
 dev_dependencies:
   flutter_test:
