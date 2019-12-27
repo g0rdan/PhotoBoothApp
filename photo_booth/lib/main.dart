@@ -79,7 +79,8 @@ class _MyHomePageState extends State<MyHomePage> {
                               padding: EdgeInsets.only(right: 10.0),
                               child: FloatingActionButton(
                                 onPressed: () {
-                                  
+                                  model.showColorsWidget = !model.showColorsWidget;
+                                  print('model.showColorsWidget: ${model.showColorsWidget}');
                                 },
                                 tooltip: 'Choise color',
                                 child: Icon(Icons.color_lens),
@@ -215,8 +216,45 @@ class _MyHomePageState extends State<MyHomePage> {
               ],
             ) 
           )
+        ),
+        bottomNavigationBar: ScopedModelDescendant<MainModel>(
+          builder: (context, _, model) => 
+            Visibility(
+              child: Padding(
+                padding: EdgeInsets.only(bottom: 20, left: 8, top: 8, right: 8),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: getColorList(model),
+                ),
+              ),
+              visible: model.showColorsWidget
+            ),
         )
-      )
+      ),
+    );
+  }
+
+  getColorList(MainModel model) {
+    List<Widget> listWidget = [];
+    for (Color color in model.colors) {
+      listWidget.add(colorCircle(model, color));
+    }
+    return listWidget;
+  }
+
+  Widget colorCircle(MainModel model, Color color) {
+    return GestureDetector(
+      onTap: () {
+        model.selectedColor = color;
+      },
+      child: ClipOval(
+        child: Container(
+          padding: const EdgeInsets.only(bottom: 16.0),
+          height: 36,
+          width: 36,
+          color: color,
+        ),
+      ),
     );
   }
 }
@@ -229,7 +267,7 @@ class Draw extends StatefulWidget {
 
 class _DrawState extends State<Draw> {
 
-  Color pickerColor = Colors.black;
+  // Color pickerColor = Colors.black;
   double strokeWidth = 3.0;
   bool showBottomList = false;
   double opacity = 1.0;
@@ -264,7 +302,6 @@ class _DrawState extends State<Draw> {
               if (currPoint.dx > 0 && currPoint.dy > 0 && currPoint.dx < renderBox.size.width && currPoint.dy < renderBox.size.height) {
                 final point = DrawingPoint(
                   point: currPoint,
-                  separator: false,
                   paint: Paint()
                     ..strokeCap = strokeCap
                     ..isAntiAlias = true

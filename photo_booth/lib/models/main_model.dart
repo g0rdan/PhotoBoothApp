@@ -14,17 +14,24 @@ class MainModel extends Model {
 
   GlobalKey canvasKey;
 
-  Color selectedColor = Colors.black;
-  bool showColorsWidget = false;
   List<Color> colors = [
     Colors.red,
     Colors.green,
     Colors.blue,
     Colors.amber,
-    Colors.black
+    Colors.black,
+    Colors.purple
   ];
+  List<DrawingPoint> _points = [];
+  List<DrawingPoint> get points => _points;
 
-  CameraPreviewState previewState = CameraPreviewState.empty;
+  CameraPreviewState _previewState = CameraPreviewState.empty;
+  CameraPreviewState get previewState => _previewState;
+  set previewState(CameraPreviewState newState) {
+    print('new state: $newState');
+    _previewState = newState;
+    notifyListeners();
+  }
 
   String _currentImagePath;
   String get currentImagePath => _currentImagePath;
@@ -33,8 +40,20 @@ class MainModel extends Model {
     _currentImagePath = path;
   }
 
-  List<DrawingPoint> _points = [];
-  List<DrawingPoint> get points => _points;
+  Color _selectedColor = Colors.black;
+  Color get selectedColor => _selectedColor;
+  set selectedColor(Color newColor) {
+    _selectedColor = newColor;
+    print('new color');
+    notifyListeners();
+  }
+
+  bool _showColorsWidget = false;
+  bool get showColorsWidget => _showColorsWidget;
+  set showColorsWidget(bool newValue) {
+    _showColorsWidget = newValue;
+    notifyListeners();
+  }
 
   void addPoint(DrawingPoint point) {
     _points.add(point);
@@ -58,14 +77,8 @@ class MainModel extends Model {
 
   void clear() {
     _points.clear();
+    notifyListeners();
     previewState = CameraPreviewState.empty;
-    notifyListeners();
-  }
-
-  void setPreviewState(CameraPreviewState newPreviewState) {
-    previewState = newPreviewState;
-    print('state: $previewState');
-    notifyListeners();
   }
 
   Future<void> getImage(imagePicker.ImageSource from) async {
@@ -80,8 +93,8 @@ class MainModel extends Model {
     tempfile.writeAsBytesSync(bytes);
 
     currentImagePath = path;
-    setPreviewState(CameraPreviewState.image);
-    notifyListeners();
+    previewState = CameraPreviewState.image;
+    // notifyListeners();
   }
 
   Future<bool> saveImage(ImageFormat imageFormat) async {
@@ -130,8 +143,7 @@ class MainModel extends Model {
 class DrawingPoint {
   Paint paint;
   Offset point;
-  bool separator;
-  DrawingPoint({this.point, this.paint, this.separator});
+  DrawingPoint({this.point, this.paint});
 }
 
 enum SelectedMode { StrokeWidth, Opacity, Color }
