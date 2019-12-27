@@ -2,9 +2,6 @@ import 'dart:io';
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
-// import 'package:flutter_colorpicker/flutter_colorpicker.dart';
-import 'package:path/path.dart';
-import 'package:path_provider/path_provider.dart';
 import 'package:scoped_model/scoped_model.dart';
 import 'package:image_picker/image_picker.dart';
 
@@ -134,28 +131,48 @@ class _MyHomePageState extends State<MyHomePage> {
                                 tooltip: 'Clear work area',
                                 onPressed: () {
                                   model.clear();
-  
-                                    // if (selectedMode == SelectedMode.StrokeWidth)
-                                    //   showBottomList = !showBottomList;
-                                    // selectedMode = SelectedMode.StrokeWidth;
-                                  
                                 }),
                                 Text('New')
                               ],
                             ),
                             Column(
                               mainAxisSize: MainAxisSize.min,
-                              children: <Widget>[
-                                IconButton(
-                                  icon: Icon(Icons.save),
-                                  tooltip: 'Save work area into file',
-                                  onPressed: () {
-                                    setState(() {
-                                      // if (selectedMode == SelectedMode.StrokeWidth)
-                                      //   showBottomList = !showBottomList;
-                                      // selectedMode = SelectedMode.StrokeWidth;
-                                    });
-                                }),
+                              children: <Widget>[ 
+                                PopupMenuButton<ImageFormat>(
+                                  child: IconButton(
+                                    icon: Icon(Icons.save),
+                                    tooltip: 'Save work area into file'
+                                  ),
+                                  onSelected: (ImageFormat result) async{
+                                    switch (result) {
+                                      case ImageFormat.png:
+                                        bool hasSavedAsPNG = await model.saveImage(ImageFormat.png);
+                                        print('hasSavedAsPNG: $hasSavedAsPNG');
+                                        break;
+                                      case ImageFormat.jpeg:
+                                        // model.getImage(ImageSource.gallery);
+                                        break;
+                                      case ImageFormat.photobooth:
+                                        // model.getImage(ImageSource.gallery);
+                                        break;
+                                      default:
+                                    }
+                                  },
+                                  itemBuilder: (BuildContext context) => <PopupMenuEntry<ImageFormat>>[
+                                    const PopupMenuItem<ImageFormat>(
+                                      value: ImageFormat.png,
+                                      child: Text('Save as PNG'),
+                                    ),
+                                    const PopupMenuItem<ImageFormat>(
+                                      value: ImageFormat.jpeg,
+                                      child: Text('Save as JPEG'),
+                                    ),
+                                    const PopupMenuItem<ImageFormat>(
+                                      value: ImageFormat.photobooth,
+                                      child: Text('Save as PhotoBooth Document'),
+                                    ),
+                                  ],
+                                ),
                                 Text('Save')
                               ],
                             ),
@@ -198,7 +215,7 @@ class _MyHomePageState extends State<MyHomePage> {
               ],
             ) 
           )
-        ) 
+        )
       )
     );
   }
@@ -212,21 +229,13 @@ class Draw extends StatefulWidget {
 
 class _DrawState extends State<Draw> {
 
-  Color selectedColor = Colors.black;
   Color pickerColor = Colors.black;
   double strokeWidth = 3.0;
   bool showBottomList = false;
   double opacity = 1.0;
   StrokeCap strokeCap = (Platform.isAndroid) ? StrokeCap.butt : StrokeCap.round;
   SelectedMode selectedMode = SelectedMode.StrokeWidth;
-  List<Color> colors = [
-    Colors.red,
-    Colors.green,
-    Colors.blue,
-    Colors.amber,
-    Colors.black
-  ];
-
+  
   @override
   Widget build(BuildContext context) {
     return ScopedModelDescendant<MainModel>(
@@ -242,7 +251,7 @@ class _DrawState extends State<Draw> {
                   paint: Paint()
                     ..strokeCap = strokeCap
                     ..isAntiAlias = true
-                    ..color = selectedColor.withOpacity(opacity)
+                    ..color = model.selectedColor.withOpacity(opacity)
                     ..strokeWidth = strokeWidth);
                 model.addPoint(point);
               }
@@ -259,7 +268,7 @@ class _DrawState extends State<Draw> {
                   paint: Paint()
                     ..strokeCap = strokeCap
                     ..isAntiAlias = true
-                    ..color = selectedColor.withOpacity(opacity)
+                    ..color = model.selectedColor.withOpacity(opacity)
                     ..strokeWidth = strokeWidth);
                 model.addPoint(point);
               }
@@ -277,6 +286,8 @@ class _DrawState extends State<Draw> {
   }
 
   _getPreviewWidget(MainModel model) {
+    GlobalKey _canvasKey = GlobalKey();
+    model.canvasKey = _canvasKey;
     switch (model.previewState) {
       case CameraPreviewState.empty:
         print('empty preview');
@@ -286,96 +297,33 @@ class _DrawState extends State<Draw> {
         break;
       case CameraPreviewState.image:
         print('draw screen');
-        return Stack(
-          children: <Widget>[
-            DisplayPictureScreen(imagePath: model.currentImagePath),
-            CustomPaint(
-              size: Size.infinite,
-              painter: DrawingPainter(
-                pointsList: model.points,
-              ),
-            )
-          ],
+        return 
+        RepaintBoundary(
+          key: _canvasKey, 
+          child: Stack(
+            children: <Widget>[
+              DisplayPictureScreen(imagePath: model.currentImagePath),
+              CustomPaint(
+                size: Size.infinite,
+                painter: DrawingPainter(
+                  pointsList: model.points,
+                ),
+              )
+            ],
+          ),
         );
         break;
       default:
     }
   }
-
-  // getColorList() {
-  //   List<Widget> listWidget = List();
-  //   for (Color color in colors) {
-  //     listWidget.add(colorCircle(color));
-  //   }
-  //   Widget colorPicker = GestureDetector(
-  //     onTap: () {
-  //       showDialog(
-  //         context: context,
-  //         child: AlertDialog(
-  //           title: const Text('Pick a color!'),
-  //           content: SingleChildScrollView(
-  //             child: ColorPicker(
-  //               pickerColor: pickerColor,
-  //               onColorChanged: (color) {
-  //                 pickerColor = color;
-  //               },
-  //               enableLabel: true,
-  //               pickerAreaHeightPercent: 0.8,
-  //             ),
-  //           ),
-  //           actions: <Widget>[
-  //             FlatButton(
-  //               child: const Text('Save'),
-  //               onPressed: () {
-  //                 setState(() => selectedColor = pickerColor);
-  //                 Navigator.of(context).pop();
-  //               },
-  //             ),
-  //           ],
-  //         ),
-  //       );
-  //     },
-  //     child: ClipOval(
-  //       child: Container(
-  //         padding: const EdgeInsets.only(bottom: 16.0),
-  //         height: 36,
-  //         width: 36,
-  //         decoration: BoxDecoration(
-  //             gradient: LinearGradient(
-  //           colors: [Colors.red, Colors.green, Colors.blue],
-  //           begin: Alignment.topLeft,
-  //           end: Alignment.bottomRight,
-  //         )),
-  //       ),
-  //     ),
-  //   );
-  //   listWidget.add(colorPicker);
-  //   return listWidget;
-  // }
-
-  Widget colorCircle(Color color) {
-    return GestureDetector(
-      onTap: () {
-        setState(() {
-          selectedColor = color;
-        });
-      },
-      child: ClipOval(
-        child: Container(
-          padding: const EdgeInsets.only(bottom: 16.0),
-          height: 36,
-          width: 36,
-          color: color,
-        ),
-      ),
-    );
-  }
 }
 
 class DrawingPainter extends CustomPainter {
-  DrawingPainter({this.pointsList});
   List<DrawingPoint> pointsList;
-  List<Offset> offsetPoints = List();
+  List<Offset> offsetPoints = [];
+
+  DrawingPainter({this.pointsList});
+  
   @override
   void paint(Canvas canvas, Size size) {
     for (int i = 0; i < pointsList.length - 1; i++) {
