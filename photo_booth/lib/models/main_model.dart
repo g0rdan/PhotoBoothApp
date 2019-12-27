@@ -1,5 +1,9 @@
+import 'dart:io';
 import 'dart:ui';
 
+import 'package:image_picker/image_picker.dart' as imagePicker;
+import 'package:path/path.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:scoped_model/scoped_model.dart';
 
 class MainModel extends Model {
@@ -42,6 +46,22 @@ class MainModel extends Model {
     print('state: $previewState');
     notifyListeners();
   }
+
+  Future<void> getImage(imagePicker.ImageSource from) async {
+    var image = await imagePicker.ImagePicker.pickImage(source: from);
+
+    final bytes = image.readAsBytesSync();
+    final bLength = bytes.length;
+    print('bytes: $bLength');
+    final path = join((await getTemporaryDirectory()).path, '${DateTime.now()}.png');
+    print('path: $path');
+    var tempfile = File(path);
+    tempfile.writeAsBytesSync(bytes);
+
+    currentImagePath = path;
+    setPreviewState(CameraPreviewState.image);
+    notifyListeners();
+  }
 }
 
 class DrawingPoint {
@@ -52,5 +72,5 @@ class DrawingPoint {
 }
 
 enum SelectedMode { StrokeWidth, Opacity, Color }
-enum CameraPreviewState { empty, preview, image }
-enum ImageSource { fromFile, fromCamera }
+enum CameraPreviewState { empty, image }
+// enum ImageSource { fromFile, fromCamera }

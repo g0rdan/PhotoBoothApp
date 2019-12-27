@@ -1,33 +1,23 @@
 import 'dart:io';
 import 'dart:ui';
 
-import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 // import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 import 'package:path/path.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:scoped_model/scoped_model.dart';
+import 'package:image_picker/image_picker.dart';
 
 import 'models/main_model.dart';
 
 Future<void> main() async {
-   WidgetsFlutterBinding.ensureInitialized();
-  // Obtain a list of the available cameras on the device.
-  final cameras = await availableCameras();
-
-  // Get a specific camera from the list of available cameras.
-  final lastCamera = cameras.last; //cameras.first;
-
-  // runApp(MyApp());
-
   runApp(
     MaterialApp(
       theme: ThemeData(
         primarySwatch: Colors.blue,
       ),
       home: MyHomePage(
-        title: 'Flutter Demo Home Page',
-        camera: lastCamera
+        title: 'Photo Booth App'
       )
     ),
   );
@@ -35,9 +25,8 @@ Future<void> main() async {
 
 class MyHomePage extends StatefulWidget {
   final String title;
-  final CameraDescription camera;
 
-  MyHomePage({Key key, this.title, this.camera}) : super(key: key);
+  MyHomePage({Key key, this.title}) : super(key: key);
 
   // This widget is the home page of your application. It is stateful, meaning
   // that it has a State object (defined below) that contains fields that affect
@@ -54,31 +43,6 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  CameraController _controller;
-  Future<void> _initializeControllerFuture;
-
-  @override
-  void initState() {
-    super.initState();
-    // To display the current output from the Camera,
-    // create a CameraController.
-    _controller = CameraController(
-      // Get a specific camera from the list of available cameras.
-      widget.camera,
-      // Define the resolution to use.
-      ResolutionPreset.medium,
-    );
-
-    // Next, initialize the controller. This returns a Future.
-    _initializeControllerFuture = _controller.initialize();
-  }
-
-   @override
-  void dispose() {
-    // Dispose of the controller when the widget is disposed.
-    _controller.dispose();
-    super.dispose();
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -117,7 +81,9 @@ class _MyHomePageState extends State<MyHomePage> {
                             Padding(
                               padding: EdgeInsets.only(right: 10.0),
                               child: FloatingActionButton(
-                                // onPressed: _incrementCounter,
+                                onPressed: () {
+                                  
+                                },
                                 tooltip: 'Choise color',
                                 child: Icon(Icons.color_lens),
                               ),
@@ -131,19 +97,22 @@ class _MyHomePageState extends State<MyHomePage> {
                                 ),
                                 onSelected: (ImageSource result) {
                                   switch (result) {
-                                    case ImageSource.fromCamera:
-                                      model.setPreviewState(CameraPreviewState.preview);
+                                    case ImageSource.camera:
+                                      model.getImage(ImageSource.camera);
+                                      break;
+                                    case ImageSource.gallery:
+                                      model.getImage(ImageSource.gallery);
                                       break;
                                     default:
                                   }
                                 },
                                 itemBuilder: (BuildContext context) => <PopupMenuEntry<ImageSource>>[
                                   const PopupMenuItem<ImageSource>(
-                                    value: ImageSource.fromCamera,
+                                    value: ImageSource.camera,
                                     child: Text('Open Camera'),
                                   ),
                                   const PopupMenuItem<ImageSource>(
-                                    value: ImageSource.fromFile,
+                                    value: ImageSource.gallery,
                                     child: Text('Open Photos'),
                                   ),
                                 ],
@@ -222,7 +191,7 @@ class _MyHomePageState extends State<MyHomePage> {
                         borderRadius: BorderRadius.circular(15.0),
                         color: Colors.blueAccent
                       ),
-                      child: Draw(_controller),
+                      child: Draw(),
                     ),
                   )
                 )
@@ -236,9 +205,6 @@ class _MyHomePageState extends State<MyHomePage> {
 }
 
 class Draw extends StatefulWidget {
-  CameraController controller;
-
-  Draw(this.controller);
 
   @override
   _DrawState createState() => _DrawState();
@@ -306,14 +272,6 @@ class _DrawState extends State<Draw> {
             });
           },
           child: _getPreviewWidget(model)
-
-          //  CustomPaint(
-          //   // key: _globalKey,
-          //   size: Size.infinite,
-          //   painter: DrawingPainter(
-          //     pointsList: model.points,
-          //   ),
-          // ),
         )
     );
   }
@@ -325,10 +283,6 @@ class _DrawState extends State<Draw> {
         return Center(
           child: Text('Empty screen')
         );
-        break;
-      case CameraPreviewState.preview:
-        print('camera preview');
-        return CameraView(widget.controller);
         break;
       case CameraPreviewState.image:
         print('draw screen');
@@ -451,60 +405,5 @@ class DisplayPictureScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Image.file(File(imagePath));
-  }
-}
-
-class CameraView extends CameraPreview {
-  CameraView(CameraController controller) : super(controller);
-
-  @override
-  Widget build(BuildContext context) {
-    var baseWidget = super.build(context);
-    return ScopedModelDescendant<MainModel>(
-      builder: (context, _, model) => Stack(
-        children: <Widget>[
-          baseWidget,
-          Align(
-            alignment: Alignment.bottomCenter,
-            child: GestureDetector(
-              onTap: () async {
-                // Take the Picture in a try / catch block. If anything goes wrong,
-                // catch the error.
-                try {
-                  // Ensure that the camera is initialized.
-                  // await _initializeControllerFuture;
-
-                  // Construct the path where the image should be saved using the
-                  // pattern package.
-                  final path = join(
-                    // Store the picture in the temp directory.
-                    // Find the temp directory using the `path_provider` plugin.
-                    (await getTemporaryDirectory()).path,
-                    '${DateTime.now()}.png',
-                  );
-
-                  model.currentImagePath = path;
-
-                  // Attempt to take a picture and log where it's been saved.
-                  await controller.takePicture(model.currentImagePath);
-                  model.setPreviewState(CameraPreviewState.image);
-
-                } catch (e) {
-                  // If an error occurs, log the error to the console.
-                  print(e);
-                }
-              },
-              child: ClipOval(
-                child: Container(
-                  color: Colors.red,
-                  height: 60.0, // height of the button
-                  width: 60.0, // width of the button
-                ),
-              ),
-            ),
-          )
-        ],
-      )
-    );
   }
 }
