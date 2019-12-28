@@ -2,7 +2,20 @@ import 'dart:io';
 
 import 'dart:typed_data';
 
+import 'package:path_provider/path_provider.dart';
+
 class FileService {
+
+  Future<String> getTempDirectory() async {
+    var directory = await getTemporaryDirectory();
+    return directory.path;
+  }
+
+  Future<String> getDocumentDirectory() async {
+    var directory = await getApplicationDocumentsDirectory();
+    return directory.path;
+  }
+
   // gets list of files in partucular directory
   List<File> getFilesInDirectory(String pathToDir) {
     if (pathToDir.isEmpty) {

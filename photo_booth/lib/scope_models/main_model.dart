@@ -6,7 +6,6 @@ import 'package:flutter/rendering.dart';
 import 'package:gallery_saver/gallery_saver.dart';
 import 'package:image_picker/image_picker.dart' as imagePicker;
 import 'package:path/path.dart';
-import 'package:path_provider/path_provider.dart';
 import 'package:photo_booth/services/files_service.dart';
 import 'package:photo_booth/services/photobooth_format_service.dart';
 import 'package:scoped_model/scoped_model.dart';
@@ -20,12 +19,12 @@ class MainModel extends Model {
   GlobalKey canvasKey;
 
   List<Color> colors = [
-    Colors.red, //'FF0000', //red,
-    Colors.green, //'008000', //green,
-    Colors.blue, //'0000FF', //blue,
-    Colors.amber, //'FFBF00', //amber,
-    Colors.black, //'000000', //black,
-    Colors.purple, //'800080', //purple
+    Colors.red, //'FF0000'
+    Colors.green, //'008000'
+    Colors.blue, //'0000FF'
+    Colors.amber, //'FFBF00'
+    Colors.black, //'000000'
+    Colors.purple, //'800080'
   ];
   List<DrawingPoint> _points = [];
   List<DrawingPoint> get points => _points;
@@ -76,16 +75,22 @@ class MainModel extends Model {
 
   void test() {
 
-    print('test points: ${points.length}');
-    var phf = _phBoothService.toPhotoboothFormat(
+    _phBoothService.saveCanvasAsFile(
+      currentImagePath, 
       DrawingArea()
         ..points = points
         ..size = canvasSize
     );
-    print('phf.lines.length: ${phf.lines.length}');
-    var drawingArea = _phBoothService.toDrawingPoints(phf);
-    print('drawingArea.size: ${drawingArea.size}');
-    print('drawingArea.points.length: ${drawingArea.points.length}');
+    // print('test points: ${points.length}');
+    // var phf = _phBoothService.toPhotoboothFormat(
+      // DrawingArea()
+      //   ..points = points
+      //   ..size = canvasSize
+    // );
+    // print('phf.lines.length: ${phf.lines.length}');
+    // var drawingArea = _phBoothService.toDrawingPoints(phf);
+    // print('drawingArea.size: ${drawingArea.size}');
+    // print('drawingArea.points.length: ${drawingArea.points.length}');
   }
 
   void addPoint(DrawingPoint point) {
@@ -119,7 +124,8 @@ class MainModel extends Model {
     var image = await imagePicker.ImagePicker.pickImage(source: from);
     final bytes = image.readAsBytesSync();
     // place it in temp folder
-    final path = join((await getTemporaryDirectory()).path, '${DateTime.now()}.png');
+    final tempDir = await _filesService.getTempDirectory();
+    final path = join(tempDir, '${DateTime.now()}.png');
     var result = await _filesService.saveInFile(path, bytes);
     if (result) {
       currentImagePath = path;
@@ -154,7 +160,8 @@ class MainModel extends Model {
       // transfering png as sequence of bytes
       Uint8List pngBytes = byteData.buffer.asUint8List();
       // making temp file
-      final path = join((await getTemporaryDirectory()).path, 'canvas_${DateTime.now()}.png');
+      final tempDir = await _filesService.getTempDirectory();
+      final path = join(tempDir, 'canvas_${DateTime.now()}.png');
       // write bytes into the file
       bool result = await _filesService.saveInFile(path, pngBytes);
       if (result)

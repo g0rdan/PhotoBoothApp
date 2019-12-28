@@ -1,5 +1,8 @@
+import 'dart:convert';
+import 'dart:io';
 import 'dart:ui';
 
+import 'package:path/path.dart';
 import 'package:photo_booth/models/photobooth_doc.dart';
 import 'package:photo_booth/services/files_service.dart';
 import 'package:photo_booth/models/drawing_point.dart';
@@ -12,6 +15,31 @@ class PhotoboothFormatService {
 
   PhotoboothFormatService(FileService filesService) {
     _filesService = filesService;
+  }
+
+  Future<bool> saveCanvasAsFile(String pathToImage, DrawingArea canvas) async {
+
+    try {
+      var filename = '${DateTime.now()}';
+      var documentDir = await _filesService.getDocumentDirectory();
+      
+      var imageFilename = '$filename.png';
+      var imagePath = join(documentDir, imageFilename);
+      var tempBytes = await File(pathToImage).readAsBytes();
+      var imageFile = await File(imagePath).writeAsBytes(tempBytes);
+
+      var canavsFilename = '$filename.json';
+      var canvasDoc = toPhotoboothFormat(canvas);
+      var canvasJson = json.encode(canvasDoc);
+      var canvasPath = join(documentDir, canavsFilename);
+      var canvasFile = await File(canvasPath).writeAsString(canvasJson);
+
+      return true;
+
+    } catch (e) {
+      print(e);
+      return false;
+    }
   }
 
   PhotoboothPencilDocument toPhotoboothFormat(DrawingArea canvas) {
