@@ -1,4 +1,3 @@
-import 'dart:io';
 import 'dart:typed_data';
 import 'dart:ui' as ui;
 
@@ -8,22 +7,36 @@ import 'package:gallery_saver/gallery_saver.dart';
 import 'package:image_picker/image_picker.dart' as imagePicker;
 import 'package:path/path.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:photo_booth/services/files_service.dart';
+import 'package:photo_booth/services/photobooth_format_service.dart';
 import 'package:scoped_model/scoped_model.dart';
+import 'package:photo_booth/models/drawing_point.dart';
 
 class MainModel extends Model {
+
+  FileService _filesService;
+  PhotoboothFormatService _phBoothService;
 
   GlobalKey canvasKey;
 
   List<Color> colors = [
-    Colors.red,
-    Colors.green,
-    Colors.blue,
-    Colors.amber,
-    Colors.black,
-    Colors.purple
+    Colors.red, //'FF0000', //red,
+    Colors.green, //'008000', //green,
+    Colors.blue, //'0000FF', //blue,
+    Colors.amber, //'FFBF00', //amber,
+    Colors.black, //'000000', //black,
+    Colors.purple, //'800080', //purple
   ];
   List<DrawingPoint> _points = [];
   List<DrawingPoint> get points => _points;
+
+  Size _canvasSize = Size(0, 0);
+  Size get canvasSize => _canvasSize;
+  set canvasSize (Size newSize) {
+    if (newSize.width != _canvasSize.width || newSize.height != _canvasSize.height) {
+      _canvasSize = newSize;
+    }
+  }
 
   CameraPreviewState _previewState = CameraPreviewState.empty;
   CameraPreviewState get previewState => _previewState;
@@ -56,6 +69,25 @@ class MainModel extends Model {
     notifyListeners();
   }
 
+  MainModel(FileService filesService, PhotoboothFormatService phBoothService) {
+    _filesService = filesService;
+    _phBoothService = phBoothService;
+  }
+
+  void test() {
+
+    print('test points: ${points.length}');
+    var phf = _phBoothService.toPhotoboothFormat(
+      DrawingArea()
+        ..points = points
+        ..size = canvasSize
+    );
+    print('phf.lines.length: ${phf.lines.length}');
+    var drawingArea = _phBoothService.toDrawingPoints(phf);
+    print('drawingArea.size: ${drawingArea.size}');
+    print('drawingArea.points.length: ${drawingArea.points.length}');
+  }
+
   void addPoint(DrawingPoint point) {
     _points.add(point);
     notifyListeners();
@@ -85,17 +117,17 @@ class MainModel extends Model {
 
   Future<void> getImage(imagePicker.ImageSource from) async {
     var image = await imagePicker.ImagePicker.pickImage(source: from);
-
     final bytes = image.readAsBytesSync();
-    final bLength = bytes.length;
-    print('bytes: $bLength');
+    // place it in temp folder
     final path = join((await getTemporaryDirectory()).path, '${DateTime.now()}.png');
-    print('path: $path');
-    var tempfile = File(path);
-    tempfile.writeAsBytesSync(bytes);
-
-    currentImagePath = path;
-    previewState = CameraPreviewState.image;
+    var result = await _filesService.saveInFile(path, bytes);
+    if (result) {
+      currentImagePath = path;
+      previewState = CameraPreviewState.image;
+    }
+    else {
+      print('MainModel.getImage(): couldn\'t write file in temp folder');
+    }
   }
 
   Future<bool> saveImage(ImageFormat imageFormat) async {
@@ -123,22 +155,16 @@ class MainModel extends Model {
       Uint8List pngBytes = byteData.buffer.asUint8List();
       // making temp file
       final path = join((await getTemporaryDirectory()).path, 'canvas_${DateTime.now()}.png');
-      var tempfile = File(path);
       // write bytes into the file
-      tempfile.writeAsBytesSync(pngBytes);
-      // saving temp file into OS gallery
-      return await GallerySaver.saveImage(tempfile.path);
+      bool result = await _filesService.saveInFile(path, pngBytes);
+      if (result)
+        // saving temp file into OS gallery
+        return await GallerySaver.saveImage(path);
     } catch (e) {
       print(e);
       return false;
     }
   }
-}
-
-class DrawingPoint {
-  Paint paint;
-  Offset point;
-  DrawingPoint({this.point, this.paint});
 }
 
 enum CameraPreviewState { empty, image }

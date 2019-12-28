@@ -2,11 +2,15 @@ import 'dart:io';
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
+import 'package:photo_booth/models/drawing_point.dart';
+import 'package:photo_booth/services/files_service.dart';
+import 'package:photo_booth/services/photobooth_format_service.dart';
 import 'package:scoped_model/scoped_model.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:flutter/services.dart';
 
-import 'models/main_model.dart';
+import 'extensions/ui_extensions.dart';
+import 'scope_models/main_model.dart';
 
 Future<void> main() async {
   runApp(
@@ -41,7 +45,7 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-
+  
   @override
   void initState() {
     super.initState();
@@ -52,14 +56,16 @@ class _MyHomePageState extends State<MyHomePage> {
 
   @override
   Widget build(BuildContext context) {
-    // This method is rerun every time setState is called, for instance as done
-    // by the _incrementCounter method above.
+    // This method is rerun every time setState is called
     //
     // The Flutter framework has been optimized to make rerunning build methods
     // fast, so that you can just rebuild anything that needs updating rather
     // than having to individually change instances of widgets.
     return ScopedModel(
-      model: MainModel(),
+      model: MainModel(
+        FileService(),
+        PhotoboothFormatService(FileService())
+      ),
       child: Scaffold(
         appBar: AppBar(
           // Here we take the value from the MyHomePage object that was created by
@@ -146,7 +152,8 @@ class _MyHomePageState extends State<MyHomePage> {
                                   tooltip: 'Clear work area',
                                   onPressed: () {
                                     if (model.previewState == CameraPreviewState.image)
-                                      model.clear();
+                                      // model.clear();
+                                      model.test();
                                   }),
                                   Text('New')
                                 ],
@@ -306,15 +313,12 @@ class _DrawState extends State<Draw> {
           onPanUpdate: (details) {
             setState(() {
               RenderBox renderBox = context.findRenderObject();
+              model.canvasSize = renderBox.size;
               final currPoint = renderBox.globalToLocal(details.globalPosition);
               if (currPoint.dx > 0 && currPoint.dy > 0 && currPoint.dx < renderBox.size.width && currPoint.dy < renderBox.size.height) {
               final point = DrawingPoint(
                   point: currPoint,
-                  paint: Paint()
-                    ..strokeCap = strokeCap
-                    ..isAntiAlias = true
-                    ..color = model.selectedColor.withOpacity(opacity)
-                    ..strokeWidth = strokeWidth);
+                  paint: PaintExtensions.getDeafultPaint(model.selectedColor));
                 model.addPoint(point);
               }
             });
@@ -326,11 +330,7 @@ class _DrawState extends State<Draw> {
               if (currPoint.dx > 0 && currPoint.dy > 0 && currPoint.dx < renderBox.size.width && currPoint.dy < renderBox.size.height) {
                 final point = DrawingPoint(
                   point: currPoint,
-                  paint: Paint()
-                    ..strokeCap = strokeCap
-                    ..isAntiAlias = true
-                    ..color = model.selectedColor.withOpacity(opacity)
-                    ..strokeWidth = strokeWidth);
+                  paint: PaintExtensions.getDeafultPaint(model.selectedColor));
                 model.addPoint(point);
               }
             });
@@ -351,13 +351,13 @@ class _DrawState extends State<Draw> {
     model.canvasKey = _canvasKey;
     switch (model.previewState) {
       case CameraPreviewState.empty:
-        print('empty preview');
+        // print('empty preview');
         return Center(
           child: Text('Please choise a picture for drawing.')
         );
         break;
       case CameraPreviewState.image:
-        print('draw screen');
+        // print('draw screen');
         return 
         RepaintBoundary(
           key: _canvasKey, 
@@ -389,6 +389,7 @@ class DrawingPainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     for (int i = 0; i < pointsList.length - 1; i++) {
       if (pointsList[i] != null && pointsList[i + 1] != null) {
+        print('draw line');
         canvas.drawLine(pointsList[i].point, pointsList[i + 1].point,
             pointsList[i].paint);
       } else if (pointsList[i] != null && pointsList[i + 1] == null) {
@@ -396,6 +397,7 @@ class DrawingPainter extends CustomPainter {
         offsetPoints.add(pointsList[i].point);
         offsetPoints.add(Offset(
             pointsList[i].point.dx + 0.1, pointsList[i].point.dy + 0.1));
+        print('draw points');
         canvas.drawPoints(PointMode.points, offsetPoints, pointsList[i].paint);
       }
     }
@@ -413,11 +415,6 @@ class DisplayPictureScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-
-    
-    var image = Image.file(File(imagePath));
-    print('width: ${image.width}');
-    print('height: ${image.height}');
-    return image;
+    return Image.file(File(imagePath));
   }
 }

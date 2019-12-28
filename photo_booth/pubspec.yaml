@@ -28,11 +28,14 @@ dependencies:
   path: any
   image_picker: any
   gallery_saver : any
+  json_annotation: any
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_colorpicker: any
+  build_runner: any
+  json_serializable: any
 
 
 # For information on the generic Dart part of this file, see the
