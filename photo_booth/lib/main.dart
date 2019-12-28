@@ -4,6 +4,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:scoped_model/scoped_model.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:flutter/services.dart';
 
 import 'models/main_model.dart';
 
@@ -42,6 +43,14 @@ class MyHomePage extends StatefulWidget {
 class _MyHomePageState extends State<MyHomePage> {
 
   @override
+  void initState() {
+    super.initState();
+    SystemChrome.setPreferredOrientations([
+      DeviceOrientation.portraitUp,
+    ]);
+  }
+
+  @override
   Widget build(BuildContext context) {
     // This method is rerun every time setState is called, for instance as done
     // by the _incrementCounter method above.
@@ -75,15 +84,18 @@ class _MyHomePageState extends State<MyHomePage> {
                         top: 20,
                         child: Row(
                           children: <Widget>[
-                            Padding(
-                              padding: EdgeInsets.only(right: 10.0),
-                              child: FloatingActionButton(
-                                onPressed: () {
-                                  model.showColorsWidget = !model.showColorsWidget;
-                                  print('model.showColorsWidget: ${model.showColorsWidget}');
-                                },
-                                tooltip: 'Choise color',
-                                child: Icon(Icons.color_lens),
+                            Opacity(
+                              opacity: model.previewState == CameraPreviewState.image ? 1.0 : 0.5,
+                              child: Padding(
+                                padding: EdgeInsets.only(right: 10.0),
+                                child: FloatingActionButton(
+                                  onPressed: () {
+                                    if (model.previewState == CameraPreviewState.image)
+                                      model.showColorsWidget = !model.showColorsWidget;
+                                  },
+                                  tooltip: 'Choise color',
+                                  child: Icon(Icons.color_lens),
+                                ),
                               ),
                             ),
                             Padding(
@@ -124,77 +136,92 @@ class _MyHomePageState extends State<MyHomePage> {
                         top: 10,
                         child: Row(
                           children: <Widget>[
-                            Column(
-                              mainAxisSize: MainAxisSize.min,
-                              children: <Widget>[
-                                IconButton(
-                                icon: Icon(Icons.fiber_new),
-                                tooltip: 'Clear work area',
-                                onPressed: () {
-                                  model.clear();
-                                }),
-                                Text('New')
-                              ],
+                            Opacity(
+                              opacity: model.previewState == CameraPreviewState.image ? 1.0 : 0.5,
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: <Widget>[
+                                  IconButton(
+                                  icon: Icon(Icons.fiber_new),
+                                  tooltip: 'Clear work area',
+                                  onPressed: () {
+                                    if (model.previewState == CameraPreviewState.image)
+                                      model.clear();
+                                  }),
+                                  Text('New')
+                                ],
+                              ),
                             ),
-                            Column(
-                              mainAxisSize: MainAxisSize.min,
-                              children: <Widget>[ 
-                                PopupMenuButton<ImageFormat>(
-                                  child: IconButton(
-                                    icon: Icon(Icons.save),
-                                    tooltip: 'Save work area into file'
+                            Opacity(
+                              opacity: model.previewState == CameraPreviewState.image ? 1.0 : 0.5,
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: <Widget>[ 
+                                  PopupMenuButton<ImageFormat>(
+                                    child: Padding(
+                                      padding: EdgeInsets.all(8.0),
+                                      child: Column(
+                                        children: <Widget>[
+                                          Padding(
+                                            padding: EdgeInsets.all(4.0),
+                                            child: Icon(Icons.save),
+                                          ),
+                                          Text('Save')
+                                        ],
+                                      ),
+                                    ),
+                                    onSelected: (ImageFormat result) async {
+                                      if (model.previewState == CameraPreviewState.image) {
+                                        switch (result) {
+                                          case ImageFormat.png:
+                                            bool hasSavedAsPNG = await model.saveImage(ImageFormat.png);
+                                            print('hasSavedAsPNG: $hasSavedAsPNG');
+                                            break;
+                                          case ImageFormat.jpeg:
+                                            // model.getImage(ImageSource.gallery);
+                                            break;
+                                          case ImageFormat.photobooth:
+                                            // model.getImage(ImageSource.gallery);
+                                            break;
+                                          default:
+                                        }
+                                      }
+                                    },
+                                    itemBuilder: (BuildContext context) => <PopupMenuEntry<ImageFormat>>[
+                                      const PopupMenuItem<ImageFormat>(
+                                        value: ImageFormat.png,
+                                        child: Text('Save as PNG'),
+                                      ),
+                                      const PopupMenuItem<ImageFormat>(
+                                        value: ImageFormat.jpeg,
+                                        child: Text('Save as JPEG'),
+                                      ),
+                                      const PopupMenuItem<ImageFormat>(
+                                        value: ImageFormat.photobooth,
+                                        child: Text('Save as PhotoBooth Document'),
+                                      ),
+                                    ],
                                   ),
-                                  onSelected: (ImageFormat result) async{
-                                    switch (result) {
-                                      case ImageFormat.png:
-                                        bool hasSavedAsPNG = await model.saveImage(ImageFormat.png);
-                                        print('hasSavedAsPNG: $hasSavedAsPNG');
-                                        break;
-                                      case ImageFormat.jpeg:
-                                        // model.getImage(ImageSource.gallery);
-                                        break;
-                                      case ImageFormat.photobooth:
-                                        // model.getImage(ImageSource.gallery);
-                                        break;
-                                      default:
+                                ],
+                              ),
+                            ),
+                            Opacity(
+                              opacity: model.points.isEmpty ? 0.5 : 1.0,
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: <Widget>[
+                                  IconButton(
+                                    icon: Icon(Icons.undo),
+                                    tooltip: 'Undo changes in work area',
+                                    onPressed: () {
+                                      if (model.points.isNotEmpty)
+                                        model.undo();
                                     }
-                                  },
-                                  itemBuilder: (BuildContext context) => <PopupMenuEntry<ImageFormat>>[
-                                    const PopupMenuItem<ImageFormat>(
-                                      value: ImageFormat.png,
-                                      child: Text('Save as PNG'),
-                                    ),
-                                    const PopupMenuItem<ImageFormat>(
-                                      value: ImageFormat.jpeg,
-                                      child: Text('Save as JPEG'),
-                                    ),
-                                    const PopupMenuItem<ImageFormat>(
-                                      value: ImageFormat.photobooth,
-                                      child: Text('Save as PhotoBooth Document'),
-                                    ),
-                                  ],
-                                ),
-                                Text('Save')
-                              ],
-                            ),
-                            Column(
-                              mainAxisSize: MainAxisSize.min,
-                              children: <Widget>[
-                                IconButton(
-                                icon: Icon(Icons.undo),
-                                tooltip: 'Undo changes in work area',
-                                onPressed: () {
-                                  model.undo();
-                                  // setState(() {
-                                    
-                                  //   // if (selectedMode == SelectedMode.StrokeWidth)
-                                  //   //   showBottomList = !showBottomList;
-                                  //   // selectedMode = SelectedMode.StrokeWidth;
-                                  // });
-                                }),
-                                Text('Undo')
-                              ],
-                            ),
+                                  ),
+                                  Text('Undo')
+                                ],
+                              ),
+                            )
                           ],
                         )
                     ),
@@ -207,7 +234,7 @@ class _MyHomePageState extends State<MyHomePage> {
                     child: Container(
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(15.0),
-                        color: Colors.blueAccent
+                        color: Colors.grey[200]
                       ),
                       child: Draw(),
                     ),
@@ -266,13 +293,10 @@ class Draw extends StatefulWidget {
 }
 
 class _DrawState extends State<Draw> {
-
-  // Color pickerColor = Colors.black;
   double strokeWidth = 3.0;
   bool showBottomList = false;
   double opacity = 1.0;
   StrokeCap strokeCap = (Platform.isAndroid) ? StrokeCap.butt : StrokeCap.round;
-  SelectedMode selectedMode = SelectedMode.StrokeWidth;
   
   @override
   Widget build(BuildContext context) {
@@ -329,7 +353,7 @@ class _DrawState extends State<Draw> {
       case CameraPreviewState.empty:
         print('empty preview');
         return Center(
-          child: Text('Empty screen')
+          child: Text('Please choise a picture for drawing.')
         );
         break;
       case CameraPreviewState.image:
@@ -389,6 +413,11 @@ class DisplayPictureScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Image.file(File(imagePath));
+
+    
+    var image = Image.file(File(imagePath));
+    print('width: ${image.width}');
+    print('height: ${image.height}');
+    return image;
   }
 }

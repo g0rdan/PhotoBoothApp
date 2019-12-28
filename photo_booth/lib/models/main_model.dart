@@ -28,7 +28,9 @@ class MainModel extends Model {
   CameraPreviewState _previewState = CameraPreviewState.empty;
   CameraPreviewState get previewState => _previewState;
   set previewState(CameraPreviewState newState) {
-    print('new state: $newState');
+    // clear canvas if we're going to create a new one
+    if (newState == CameraPreviewState.image)
+      _points.clear();
     _previewState = newState;
     notifyListeners();
   }
@@ -44,7 +46,6 @@ class MainModel extends Model {
   Color get selectedColor => _selectedColor;
   set selectedColor(Color newColor) {
     _selectedColor = newColor;
-    print('new color');
     notifyListeners();
   }
 
@@ -77,6 +78,7 @@ class MainModel extends Model {
 
   void clear() {
     _points.clear();
+    showColorsWidget = false;
     notifyListeners();
     previewState = CameraPreviewState.empty;
   }
@@ -94,19 +96,12 @@ class MainModel extends Model {
 
     currentImagePath = path;
     previewState = CameraPreviewState.image;
-    // notifyListeners();
   }
 
   Future<bool> saveImage(ImageFormat imageFormat) async {
-    if (currentImagePath.isEmpty) {
-      print('temp image path is empty');
+    // if canvas is empty there is nothing to save
+    if (canvasKey == null)
       return false;
-    }
-    
-    if (canvasKey == null){
-      print('canvas key is null');
-      return false;
-    }
 
     switch (imageFormat) {
       case ImageFormat.png:
@@ -146,7 +141,5 @@ class DrawingPoint {
   DrawingPoint({this.point, this.paint});
 }
 
-enum SelectedMode { StrokeWidth, Opacity, Color }
 enum CameraPreviewState { empty, image }
 enum ImageFormat { png, jpeg, photobooth }
-// enum ImageSource { fromFile, fromCamera }
