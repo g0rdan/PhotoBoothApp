@@ -1,7 +1,7 @@
 import 'dart:io';
-
 import 'dart:typed_data';
 
+import 'package:path/path.dart';
 import 'package:path_provider/path_provider.dart';
 
 class FileService {
@@ -16,13 +16,30 @@ class FileService {
     return directory.path;
   }
 
+  Future<Directory> createDocumentFolder(String name) async {
+    if(name.isEmpty) {
+      print('FileService.createDocumentFolder(): name of folder can\'t be null');
+      return null;
+    }
+
+    var applicationFolder = await getDocumentDirectory();
+    var path = join(applicationFolder, name); 
+    return await Directory(path).create();
+  }
+
   // gets list of files in partucular directory
-  List<File> getFilesInDirectory(String pathToDir) {
+  List<File> getFiles(String pathToDir) {
     if (pathToDir.isEmpty) {
       print('FilesService.getFilesInDirectory(): pathToDir can\'t be empty');
       return [];
     }
-    return Directory(pathToDir).listSync().where((e) => e is File);
+    List<File> files = [];
+    var entries = Directory(pathToDir).listSync();
+    for (var entry in entries) {
+      if (entry is File)
+        files.add(entry);
+    }
+    return files;
   }
 
   // gets list of directories in partucular directory
@@ -31,7 +48,13 @@ class FileService {
       print('FilesService.getDirectories(): pathToDir can\'t be empty');
       return [];
     }
-    return Directory(pathToDir).listSync().where((e) => e is Directory);
+    List<Directory> folders = [];
+    var entries = Directory(pathToDir).listSync();
+    for (var entry in entries) {
+      if (entry is Directory)
+        folders.add(entry);
+    }
+    return folders;
   }
 
   // get particular file

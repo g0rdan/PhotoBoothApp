@@ -3,6 +3,7 @@ import 'dart:io';
 import 'dart:ui';
 
 import 'package:path/path.dart';
+import 'package:intl/intl.dart';
 import 'package:photo_booth/models/photobooth_doc.dart';
 import 'package:photo_booth/services/files_service.dart';
 import 'package:photo_booth/models/drawing_point.dart';
@@ -18,24 +19,25 @@ class PhotoboothFormatService {
   }
 
   Future<bool> saveCanvasAsFile(String pathToImage, DrawingArea canvas) async {
-
     try {
-      var filename = '${DateTime.now()}';
-      var documentDir = await _filesService.getDocumentDirectory();
-      
-      var imageFilename = '$filename.png';
-      var imagePath = join(documentDir, imageFilename);
+      var dateTime = DateTime.now();
+      var formatter = new DateFormat('yyyy-MM-dd hh:mm:ss');
+      String name = formatter.format(dateTime);
+      // create fodler for image and json
+      var docFodler = await _filesService.createDocumentFolder(name);
+      // write original image to the fodler
+      var imageFilename = '$name.png';
+      var imagePath = join(docFodler.path, imageFilename);
       var tempBytes = await File(pathToImage).readAsBytes();
-      var imageFile = await File(imagePath).writeAsBytes(tempBytes);
-
-      var canavsFilename = '$filename.json';
+      await File(imagePath).writeAsBytes(tempBytes);
+      // write canvas data to the fodler
+      var canavsFilename = '$name.json';
       var canvasDoc = toPhotoboothFormat(canvas);
       var canvasJson = json.encode(canvasDoc);
-      var canvasPath = join(documentDir, canavsFilename);
-      var canvasFile = await File(canvasPath).writeAsString(canvasJson);
+      var canvasPath = join(docFodler.path, canavsFilename);
+      await File(canvasPath).writeAsString(canvasJson);
 
       return true;
-
     } catch (e) {
       print(e);
       return false;
@@ -63,9 +65,8 @@ class PhotoboothFormatService {
     while (index < canvas.points.length) {
       var slice = _getSlice(index, canvas.points);
       var color = slice[0].paint.color;
-      String hexColor = ColorConverter.toHEX(color);
       var line = PhotoboothLine();
-      line.color = hexColor;
+      line.color = color.value;
       for (var point in slice) {
         var photoboothPoint = PhotoboothPoint();
         photoboothPoint.x = point.point.dx;
@@ -98,10 +99,9 @@ class PhotoboothFormatService {
     canvas.size = Size(document.widht, document.height);
     canvas.points = new List<DrawingPoint>();
     for (var line in document.lines) {
-      var color = ColorConverter.toColor(line.color);      
       for (var point in line.points) {
         var drPont = DrawingPoint();
-        var paint = PaintExtensions.getDeafultPaint(color);
+        var paint = PaintHelper.getDeafultPaint(Color(line.color));
         drPont.paint = paint;
         drPont.point = Offset(point.x, point.y);
         canvas.points.add(drPont);

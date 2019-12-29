@@ -1,3 +1,5 @@
+import 'dart:convert';
+import 'dart:io';
 import 'dart:typed_data';
 import 'dart:ui' as ui;
 
@@ -6,6 +8,7 @@ import 'package:flutter/rendering.dart';
 import 'package:gallery_saver/gallery_saver.dart';
 import 'package:image_picker/image_picker.dart' as imagePicker;
 import 'package:path/path.dart';
+import 'package:photo_booth/models/photobooth_doc.dart';
 import 'package:photo_booth/services/files_service.dart';
 import 'package:photo_booth/services/photobooth_format_service.dart';
 import 'package:scoped_model/scoped_model.dart';
@@ -19,12 +22,12 @@ class MainModel extends Model {
   GlobalKey canvasKey;
 
   List<Color> colors = [
-    Colors.red, //'FF0000'
-    Colors.green, //'008000'
-    Colors.blue, //'0000FF'
-    Colors.amber, //'FFBF00'
-    Colors.black, //'000000'
-    Colors.purple, //'800080'
+    Colors.red,
+    Colors.green,
+    Colors.blue,
+    Colors.amber,
+    Colors.black,
+    Colors.purple,
   ];
   List<DrawingPoint> _points = [];
   List<DrawingPoint> get points => _points;
@@ -68,33 +71,37 @@ class MainModel extends Model {
     notifyListeners();
   }
 
+  List<DocumentItemModel> _documents = [];
+  List<DocumentItemModel> get documents => _documents;
+  set documents(List<DocumentItemModel> newDocuments) {
+    _documents = newDocuments;
+    notifyListeners();
+  }
+
   MainModel(FileService filesService, PhotoboothFormatService phBoothService) {
     _filesService = filesService;
     _phBoothService = phBoothService;
   }
 
-  void test() {
-
-    _phBoothService.saveCanvasAsFile(
+  Future<bool> saveAsPhotoboothDocument() async {
+    return await _phBoothService.saveCanvasAsFile(
       currentImagePath, 
       DrawingArea()
         ..points = points
         ..size = canvasSize
     );
-    // print('test points: ${points.length}');
-    // var phf = _phBoothService.toPhotoboothFormat(
-      // DrawingArea()
-      //   ..points = points
-      //   ..size = canvasSize
-    // );
-    // print('phf.lines.length: ${phf.lines.length}');
-    // var drawingArea = _phBoothService.toDrawingPoints(phf);
-    // print('drawingArea.size: ${drawingArea.size}');
-    // print('drawingArea.points.length: ${drawingArea.points.length}');
   }
 
   void addPoint(DrawingPoint point) {
     _points.add(point);
+    notifyListeners();
+  }
+
+  void addDocument(String name, String pathToImage) {
+    documents.add(DocumentItemModel(
+      name: name, 
+      pathToImage: pathToImage)
+    );
     notifyListeners();
   }
 
@@ -136,7 +143,7 @@ class MainModel extends Model {
     }
   }
 
-  Future<bool> saveImage(ImageFormat imageFormat) async {
+  Future<bool> saveToGallery(ImageFormat imageFormat) async {
     // if canvas is empty there is nothing to save
     if (canvasKey == null)
       return false;
@@ -172,7 +179,48 @@ class MainModel extends Model {
       return false;
     }
   }
+
+  Future<List<DocumentItemModel>> getDocuments() async {
+    try {
+      documents.clear();
+      var docDirectory = await _filesService.getDocumentDirectory();
+      var dirs = _filesService.getDirectories(docDirectory);
+      for (var dir in dirs) {
+        var name = basename(dir.path);
+        var pathToImage = join(dir.path, '$name.png');
+        documents.add(DocumentItemModel(
+          name: name, 
+          pathToImage: pathToImage)
+        );
+      }
+    } catch (e) {
+      print(e);
+    }
+    notifyListeners();
+    return documents;
+  }
+
+  Future<void> placeDocumentOnCanvas(DocumentItemModel model) async {
+    currentImagePath = model.pathToImage;
+    previewState = CameraPreviewState.image;
+
+    var docFolder = await _filesService.getDocumentDirectory();
+    var pathToJson = join(docFolder, model.name, '${model.name}.json');
+    var file = await File(pathToJson).readAsString();
+    var doc = PhotoboothPencilDocument.fromJson(json.decode(file));
+    var drawingArea = _phBoothService.toDrawingPoints(doc);
+    points.clear();
+    _points = drawingArea.points;
+    notifyListeners();
+  }
+}
+
+class DocumentItemModel {
+  String name;
+  String pathToImage;
+  DocumentItemModel({this.name, this.pathToImage});
 }
 
 enum CameraPreviewState { empty, image }
 enum ImageFormat { png, jpeg, photobooth }
+enum SourceOfImage { fromCamera, fromGallery, fromDocuments }

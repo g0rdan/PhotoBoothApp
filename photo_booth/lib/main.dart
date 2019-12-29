@@ -106,30 +106,67 @@ class _MyHomePageState extends State<MyHomePage> {
                             ),
                             Padding(
                               padding: EdgeInsets.only(right: 0.0),
-                              child: PopupMenuButton<ImageSource>(
+                              child: PopupMenuButton<SourceOfImage>(
                                 child: FloatingActionButton(
                                   tooltip: 'Take photo',
                                   child: Icon(Icons.image),
                                 ),
-                                onSelected: (ImageSource result) {
+                                onSelected: (SourceOfImage result) async {
                                   switch (result) {
-                                    case ImageSource.camera:
+                                    case SourceOfImage.fromCamera:
                                       model.getImage(ImageSource.camera);
                                       break;
-                                    case ImageSource.gallery:
+                                    case SourceOfImage.fromGallery:
                                       model.getImage(ImageSource.gallery);
+                                      break;
+                                    case SourceOfImage.fromDocuments:
+                                      // model.getImage(ImageSource.gallery);
+                                      await model.getDocuments();
+                                      print('oepn document page');
+                                      showModalBottomSheet<void>(context: context, builder: (BuildContext context) {
+                                        return Container(
+                                          child: Padding(
+                                            padding: const EdgeInsets.only(left: 20, top: 10, right: 20, bottom: 10),
+                                            child: ListView.builder(
+                                              scrollDirection: Axis.vertical,
+                                              shrinkWrap: true,
+                                              itemCount: model.documents.length,
+                                              itemBuilder: (context, index) {
+                                                final item = model.documents[index];
+                                                return Column (
+                                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                                  children: <Widget>[
+                                                    ListTile(
+                                                      title: Text(item.name),
+                                                      leading: Image.file(File(item.pathToImage)),
+                                                      onTap: () {
+                                                        model.placeDocumentOnCanvas(item);
+                                                      },
+                                                    ),
+                                                    Divider()
+                                                  ],
+                                                );
+                                              },
+                                            ),
+                                          ),
+                                        );
+                                      });
                                       break;
                                     default:
                                   }
                                 },
-                                itemBuilder: (BuildContext context) => <PopupMenuEntry<ImageSource>>[
-                                  const PopupMenuItem<ImageSource>(
-                                    value: ImageSource.camera,
+                                itemBuilder: (BuildContext context) => <PopupMenuEntry<SourceOfImage>>[
+                                  const PopupMenuItem<SourceOfImage>(
+                                    value: SourceOfImage.fromCamera,
                                     child: Text('Open Camera'),
                                   ),
-                                  const PopupMenuItem<ImageSource>(
-                                    value: ImageSource.gallery,
+                                  const PopupMenuItem<SourceOfImage>(
+                                    value: SourceOfImage.fromGallery,
                                     child: Text('Open Photos'),
+                                  ),
+                                  const PopupMenuItem<SourceOfImage>(
+                                    value: SourceOfImage.fromDocuments,
+                                    child: Text('Open Documents'),
                                   ),
                                 ],
                               )
@@ -152,8 +189,7 @@ class _MyHomePageState extends State<MyHomePage> {
                                   tooltip: 'Clear work area',
                                   onPressed: () {
                                     if (model.previewState == CameraPreviewState.image)
-                                      // model.clear();
-                                      model.test();
+                                      model.clear();
                                   }),
                                   Text('New')
                                 ],
@@ -181,14 +217,12 @@ class _MyHomePageState extends State<MyHomePage> {
                                       if (model.previewState == CameraPreviewState.image) {
                                         switch (result) {
                                           case ImageFormat.png:
-                                            bool hasSavedAsPNG = await model.saveImage(ImageFormat.png);
-                                            print('hasSavedAsPNG: $hasSavedAsPNG');
-                                            break;
-                                          case ImageFormat.jpeg:
-                                            // model.getImage(ImageSource.gallery);
+                                            bool result = await model.saveToGallery(ImageFormat.png);
+                                            print('hasSavedAsPNG: $result');
                                             break;
                                           case ImageFormat.photobooth:
-                                            // model.getImage(ImageSource.gallery);
+                                            bool result = await model.saveAsPhotoboothDocument();
+                                            print('hasSavedAsDocument: $result');
                                             break;
                                           default:
                                         }
@@ -198,10 +232,6 @@ class _MyHomePageState extends State<MyHomePage> {
                                       const PopupMenuItem<ImageFormat>(
                                         value: ImageFormat.png,
                                         child: Text('Save as PNG'),
-                                      ),
-                                      const PopupMenuItem<ImageFormat>(
-                                        value: ImageFormat.jpeg,
-                                        child: Text('Save as JPEG'),
                                       ),
                                       const PopupMenuItem<ImageFormat>(
                                         value: ImageFormat.photobooth,
@@ -318,7 +348,7 @@ class _DrawState extends State<Draw> {
               if (currPoint.dx > 0 && currPoint.dy > 0 && currPoint.dx < renderBox.size.width && currPoint.dy < renderBox.size.height) {
               final point = DrawingPoint(
                   point: currPoint,
-                  paint: PaintExtensions.getDeafultPaint(model.selectedColor));
+                  paint: PaintHelper.getDeafultPaint(model.selectedColor));
                 model.addPoint(point);
               }
             });
@@ -330,7 +360,7 @@ class _DrawState extends State<Draw> {
               if (currPoint.dx > 0 && currPoint.dy > 0 && currPoint.dx < renderBox.size.width && currPoint.dy < renderBox.size.height) {
                 final point = DrawingPoint(
                   point: currPoint,
-                  paint: PaintExtensions.getDeafultPaint(model.selectedColor));
+                  paint: PaintHelper.getDeafultPaint(model.selectedColor));
                 model.addPoint(point);
               }
             });

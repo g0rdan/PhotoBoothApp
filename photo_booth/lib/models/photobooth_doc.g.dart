@@ -28,7 +28,7 @@ Map<String, dynamic> _$PhotoboothPencilDocumentToJson(
 
 PhotoboothLine _$PhotoboothLineFromJson(Map<String, dynamic> json) {
   return PhotoboothLine()
-    ..color = json['color'] as String
+    ..color = json['color'] as int
     ..points = (json['points'] as List)
         ?.map((e) => e == null
             ? null

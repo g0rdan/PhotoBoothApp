@@ -16,7 +16,7 @@ class PhotoboothPencilDocument {
 
 @JsonSerializable(explicitToJson: true)
 class PhotoboothLine {
-  String color;
+  int color;
   List<PhotoboothPoint> points = [];
 
   PhotoboothLine();
