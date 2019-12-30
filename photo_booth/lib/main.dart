@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'dart:ui';
 
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:photo_booth/models/drawing_point.dart';
 import 'package:photo_booth/services/files_service.dart';
@@ -45,7 +46,9 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  
+
+  GlobalKey canvasKey = GlobalKey();
+
   @override
   void initState() {
     super.initState();
@@ -82,7 +85,7 @@ class _MyHomePageState extends State<MyHomePage> {
                   padding: const EdgeInsets.only(left: 8.0, right: 8.0),
                   decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(15.0),
-                      color: Colors.greenAccent),
+                      color: Colors.blue[100]),
                   child: Stack(
                     children: <Widget>[
                       Positioned(
@@ -95,9 +98,18 @@ class _MyHomePageState extends State<MyHomePage> {
                               child: Padding(
                                 padding: EdgeInsets.only(right: 10.0),
                                 child: FloatingActionButton(
+                                  backgroundColor: model.selectedColor,
                                   onPressed: () {
                                     if (model.previewState == CameraPreviewState.image)
-                                      model.showColorsWidget = !model.showColorsWidget;
+                                      showModalBottomSheet<void>(context: context, builder: (BuildContext context) {
+                                        return Padding(
+                                          padding: EdgeInsets.only(bottom: 30, left: 8, top: 8, right: 8),
+                                          child: Row(
+                                            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                                            children: getColorList(model, context),
+                                          ),
+                                        );
+                                      });
                                   },
                                   tooltip: 'Choise color',
                                   child: Icon(Icons.color_lens),
@@ -185,59 +197,97 @@ class _MyHomePageState extends State<MyHomePage> {
                                 mainAxisSize: MainAxisSize.min,
                                 children: <Widget>[
                                   IconButton(
-                                  icon: Icon(Icons.fiber_new),
-                                  tooltip: 'Clear work area',
-                                  onPressed: () {
-                                    if (model.previewState == CameraPreviewState.image)
-                                      model.clear();
-                                  }),
+                                    icon: Icon(Icons.fiber_new),
+                                    tooltip: 'Clear work area',
+                                    onPressed: () {
+                                      if (model.previewState == CameraPreviewState.image)
+                                        model.clear();
+                                    }
+                                  ),
                                   Text('New')
                                 ],
                               ),
                             ),
                             Opacity(
                               opacity: model.previewState == CameraPreviewState.image ? 1.0 : 0.5,
-                              child: Column(
-                                mainAxisSize: MainAxisSize.min,
-                                children: <Widget>[ 
-                                  PopupMenuButton<ImageFormat>(
-                                    child: Padding(
-                                      padding: EdgeInsets.all(8.0),
-                                      child: Column(
-                                        children: <Widget>[
-                                          Padding(
-                                            padding: EdgeInsets.all(4.0),
-                                            child: Icon(Icons.save),
-                                          ),
-                                          Text('Save')
-                                        ],
-                                      ),
+                              child: PopupMenuButton<ImageFormat>(
+                                enabled: model.previewState == CameraPreviewState.image,
+                                child: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: <Widget>[
+                                    IconButton(
+                                      icon: Icon(Icons.save),
+                                      tooltip: 'Save',
+                                      onPressed: () {},
                                     ),
-                                    onSelected: (ImageFormat result) async {
-                                      if (model.previewState == CameraPreviewState.image) {
-                                        switch (result) {
-                                          case ImageFormat.png:
-                                            bool result = await model.saveToGallery(ImageFormat.png);
-                                            print('hasSavedAsPNG: $result');
-                                            break;
-                                          case ImageFormat.photobooth:
-                                            bool result = await model.saveAsPhotoboothDocument();
-                                            print('hasSavedAsDocument: $result');
-                                            break;
-                                          default:
+                                    Text('Save')
+                                  ],
+                                ),
+                                onSelected: (ImageFormat result) async {
+                                  if (model.previewState == CameraPreviewState.image) {
+                                    switch (result) {
+                                      case ImageFormat.png:
+                                        bool result = await model.saveToGallery(canvasKey);
+                                        if (result) {
+                                          String title = 'Congratulations';
+                                          String desciption = 'The image has been saved in Gallery';
+                                          String okText = 'OK';
+                                          if (Platform.isIOS) {
+                                            showCupertinoDialog(
+                                              context: context,
+                                              builder: (context) {
+                                                return CupertinoAlertDialog(
+                                                  title: new Text(title),
+                                                  content: new Text(desciption),
+                                                  actions: <Widget>[
+                                                    CupertinoDialogAction(
+                                                      isDefaultAction: true,
+                                                      child: Text(okText),
+                                                      onPressed: () {
+                                                        Navigator.of(context).pop();
+                                                      },
+                                                    )
+                                                  ]
+                                                );
+                                              }
+                                            );
+                                          }
+                                          else {
+                                            showDialog(
+                                              context: context, 
+                                              child: new AlertDialog(
+                                                title: new Text(title),
+                                                content: new Text(desciption),
+                                                actions: <Widget>[
+                                                  FlatButton(
+                                                    child: Text(okText),
+                                                    onPressed: () {
+                                                      Navigator.of(context).pop();
+                                                    },
+                                                  ),
+                                                ],
+                                              )
+                                            );
+                                          }
                                         }
-                                      }
-                                    },
-                                    itemBuilder: (BuildContext context) => <PopupMenuEntry<ImageFormat>>[
-                                      const PopupMenuItem<ImageFormat>(
-                                        value: ImageFormat.png,
-                                        child: Text('Save as PNG'),
-                                      ),
-                                      const PopupMenuItem<ImageFormat>(
-                                        value: ImageFormat.photobooth,
-                                        child: Text('Save as PhotoBooth Document'),
-                                      ),
-                                    ],
+                                        print('hasSavedAsPNG: $result');
+                                        break;
+                                      case ImageFormat.photobooth:
+                                        bool result = await model.saveAsPhotoboothDocument();
+                                        print('hasSavedAsDocument: $result');
+                                        break;
+                                      default:
+                                    }
+                                  }
+                                },
+                                itemBuilder: (BuildContext context) => <PopupMenuEntry<ImageFormat>>[
+                                  const PopupMenuItem<ImageFormat>(
+                                    value: ImageFormat.png,
+                                    child: Text('Save as PNG'),
+                                  ),
+                                  const PopupMenuItem<ImageFormat>(
+                                    value: ImageFormat.photobooth,
+                                    child: Text('Save as PhotoBooth Document'),
                                   ),
                                 ],
                               ),
@@ -273,7 +323,7 @@ class _MyHomePageState extends State<MyHomePage> {
                         borderRadius: BorderRadius.circular(15.0),
                         color: Colors.grey[200]
                       ),
-                      child: Draw(),
+                      child: Draw(canvasKey),
                     ),
                   )
                 )
@@ -281,35 +331,23 @@ class _MyHomePageState extends State<MyHomePage> {
             ) 
           )
         ),
-        bottomNavigationBar: ScopedModelDescendant<MainModel>(
-          builder: (context, _, model) => 
-            Visibility(
-              child: Padding(
-                padding: EdgeInsets.only(bottom: 20, left: 8, top: 8, right: 8),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  children: getColorList(model),
-                ),
-              ),
-              visible: model.showColorsWidget
-            ),
-        )
       ),
     );
   }
 
-  getColorList(MainModel model) {
+  getColorList(MainModel model, BuildContext context) {
     List<Widget> listWidget = [];
     for (Color color in model.colors) {
-      listWidget.add(colorCircle(model, color));
+      listWidget.add(colorCircle(model, color, context));
     }
     return listWidget;
   }
 
-  Widget colorCircle(MainModel model, Color color) {
+  Widget colorCircle(MainModel model, Color color, BuildContext context) {
     return GestureDetector(
       onTap: () {
         model.selectedColor = color;
+        Navigator.pop(context);
       },
       child: ClipOval(
         child: Container(
@@ -324,6 +362,9 @@ class _MyHomePageState extends State<MyHomePage> {
 }
 
 class Draw extends StatefulWidget {
+  GlobalKey canvasKey;
+
+  Draw(this.canvasKey);
 
   @override
   _DrawState createState() => _DrawState();
@@ -377,30 +418,20 @@ class _DrawState extends State<Draw> {
   }
 
   _getPreviewWidget(MainModel model) {
-    GlobalKey _canvasKey = GlobalKey();
-    model.canvasKey = _canvasKey;
     switch (model.previewState) {
       case CameraPreviewState.empty:
-        // print('empty preview');
         return Center(
-          child: Text('Please choise a picture for drawing.')
+          child: Text('Please choose a picture for drawing.')
         );
         break;
       case CameraPreviewState.image:
-        // print('draw screen');
-        return 
-        RepaintBoundary(
-          key: _canvasKey, 
-          child: Stack(
-            children: <Widget>[
-              DisplayPictureScreen(imagePath: model.currentImagePath),
-              CustomPaint(
-                size: Size.infinite,
-                painter: DrawingPainter(
-                  pointsList: model.points,
-                ),
-              )
-            ],
+        return RepaintBoundary(
+          key: widget.canvasKey,
+          child: CustomPaint(
+            child: DisplayPictureScreen(imagePath: model.currentImagePath),
+            foregroundPainter: DrawingPainter(
+              pointsList: model.points,
+            ),
           ),
         );
         break;

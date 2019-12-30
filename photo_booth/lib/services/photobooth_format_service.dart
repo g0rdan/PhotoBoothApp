@@ -44,7 +44,7 @@ class PhotoboothFormatService {
     }
   }
 
-  PhotoboothPencilDocument toPhotoboothFormat(DrawingArea canvas) {
+  PhotoboothDocument toPhotoboothFormat(DrawingArea canvas) {
     if (canvas == null) {
       print('PhotoboothFormatService.toPhotoboothFormat(): canvas is null');
       return null;
@@ -58,7 +58,7 @@ class PhotoboothFormatService {
       return null;
     }
 
-    var document = PhotoboothPencilDocument();
+    var document = PhotoboothDocument();
     document.widht = canvas.size.width;
     document.height = canvas.size.height;
     int index = 0;
@@ -79,7 +79,7 @@ class PhotoboothFormatService {
     return document;
   }
 
-  DrawingArea toDrawingPoints(PhotoboothPencilDocument document) {
+  DrawingArea toDrawingPoints(PhotoboothDocument document) {
     if (document == null) {
       print('PhotoboothFormatService.toDrawingPoints(): document is null');
       return null;

@@ -3,15 +3,15 @@ import 'package:json_annotation/json_annotation.dart';
 part 'photobooth_doc.g.dart';
 
 @JsonSerializable(explicitToJson: true)
-class PhotoboothPencilDocument {
+class PhotoboothDocument {
   double widht;
   double height;
   List<PhotoboothLine> lines = [];
 
-  PhotoboothPencilDocument();
+  PhotoboothDocument();
 
-  factory PhotoboothPencilDocument.fromJson(Map<String, dynamic> json) => _$PhotoboothPencilDocumentFromJson(json);
-  Map<String, dynamic> toJson() => _$PhotoboothPencilDocumentToJson(this);
+  factory PhotoboothDocument.fromJson(Map<String, dynamic> json) => _$PhotoboothDocumentFromJson(json);
+  Map<String, dynamic> toJson() => _$PhotoboothDocumentToJson(this);
 }
 
 @JsonSerializable(explicitToJson: true)

@@ -6,9 +6,8 @@ part of 'photobooth_doc.dart';
 // JsonSerializableGenerator
 // **************************************************************************
 
-PhotoboothPencilDocument _$PhotoboothPencilDocumentFromJson(
-    Map<String, dynamic> json) {
-  return PhotoboothPencilDocument()
+PhotoboothDocument _$PhotoboothDocumentFromJson(Map<String, dynamic> json) {
+  return PhotoboothDocument()
     ..widht = (json['widht'] as num)?.toDouble()
     ..height = (json['height'] as num)?.toDouble()
     ..lines = (json['lines'] as List)
@@ -18,8 +17,7 @@ PhotoboothPencilDocument _$PhotoboothPencilDocumentFromJson(
         ?.toList();
 }
 
-Map<String, dynamic> _$PhotoboothPencilDocumentToJson(
-        PhotoboothPencilDocument instance) =>
+Map<String, dynamic> _$PhotoboothDocumentToJson(PhotoboothDocument instance) =>
     <String, dynamic>{
       'widht': instance.widht,
       'height': instance.height,

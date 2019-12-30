@@ -19,8 +19,6 @@ class MainModel extends Model {
   FileService _filesService;
   PhotoboothFormatService _phBoothService;
 
-  GlobalKey canvasKey;
-
   List<Color> colors = [
     Colors.red,
     Colors.green,
@@ -29,6 +27,7 @@ class MainModel extends Model {
     Colors.black,
     Colors.purple,
   ];
+
   List<DrawingPoint> _points = [];
   List<DrawingPoint> get points => _points;
 
@@ -61,13 +60,6 @@ class MainModel extends Model {
   Color get selectedColor => _selectedColor;
   set selectedColor(Color newColor) {
     _selectedColor = newColor;
-    notifyListeners();
-  }
-
-  bool _showColorsWidget = false;
-  bool get showColorsWidget => _showColorsWidget;
-  set showColorsWidget(bool newValue) {
-    _showColorsWidget = newValue;
     notifyListeners();
   }
 
@@ -108,8 +100,7 @@ class MainModel extends Model {
   void undo() {
     if (_points.isEmpty)
       return;
-
-    try {      
+    try {
       do {
         if (_points.isNotEmpty)
           _points.removeLast();
@@ -122,7 +113,6 @@ class MainModel extends Model {
 
   void clear() {
     _points.clear();
-    showColorsWidget = false;
     notifyListeners();
     previewState = CameraPreviewState.empty;
   }
@@ -143,23 +133,17 @@ class MainModel extends Model {
     }
   }
 
-  Future<bool> saveToGallery(ImageFormat imageFormat) async {
+  /// Saves current canvas widget as PNG file in the gallery
+  Future<bool> saveToGallery(GlobalKey canvasKey) async {
     // if canvas is empty there is nothing to save
     if (canvasKey == null)
+    {
+      print('MainModel.saveToGallery(): canvasKey can\'t be null');
       return false;
-
-    switch (imageFormat) {
-      case ImageFormat.png:
-        return await _savePng(canvasKey);
-      default:
-        return false;
     }
-  }
-
-  Future<bool> _savePng(GlobalKey key) async {
     try {
       // finding canvas of the widget
-      RenderRepaintBoundary boundary = key.currentContext.findRenderObject();
+      RenderRepaintBoundary boundary = canvasKey.currentContext.findRenderObject();
       // transform the canvas into image
       ui.Image image = await boundary.toImage(pixelRatio: 3.0);
       // convert the image into png
@@ -203,11 +187,10 @@ class MainModel extends Model {
   Future<void> placeDocumentOnCanvas(DocumentItemModel model) async {
     currentImagePath = model.pathToImage;
     previewState = CameraPreviewState.image;
-
     var docFolder = await _filesService.getDocumentDirectory();
     var pathToJson = join(docFolder, model.name, '${model.name}.json');
     var file = await File(pathToJson).readAsString();
-    var doc = PhotoboothPencilDocument.fromJson(json.decode(file));
+    var doc = PhotoboothDocument.fromJson(json.decode(file));
     var drawingArea = _phBoothService.toDrawingPoints(doc);
     points.clear();
     _points = drawingArea.points;
