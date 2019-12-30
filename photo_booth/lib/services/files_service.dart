@@ -1,13 +1,25 @@
 import 'dart:io';
 import 'dart:typed_data';
 
-import 'package:path/path.dart';
+import 'package:path/path.dart' as pathlib;
 import 'package:path_provider/path_provider.dart';
 
 /// The service provides functions for reading 
 /// and writing files and direcrories of the application
-class FileService {
-
+class FileService implements IFileService {
+  /// Return combined path
+  String join(String part1, String part2, [String part3]) {
+    if (part3 == null) {
+      return pathlib.join(part1, part2);
+    }
+    else {
+      return pathlib.join(part1, part2, part3);
+    }
+  }
+  /// Returns the last name of the file or directory from path
+  String basename(String path){
+    return pathlib.basename(path);
+  }
   /// Returns path to temp folder in OS
   /// 
   /// On iOS, this uses the 'NSCachesDirectory' API.
@@ -100,4 +112,38 @@ class FileService {
       return false;
     }
   }
+
+  Future<String> readFileAsString(String pathToFile) async {
+    try {
+      return await File(pathToFile).readAsString();
+    }
+    catch (e) {
+      print(e);
+      return '';
+    }
+  }
+
+  Future<Uint8List> readFileAsBytes(String pathToFile) async {
+    try {
+      return await File(pathToFile).readAsBytes();
+    }
+    catch (e) {
+      print(e);
+      return Uint8List.fromList(List<int>());
+    }
+  }
+}
+
+abstract class IFileService {
+  String join(String part1, String part2, [String part3]);
+  String basename(String path);
+  Future<String> getTempDirectory();
+  Future<String> getDocumentDirectory();
+  Future<Directory> createDocumentFolder(String name);
+  List<File> getFiles(String pathToDir);
+  List<Directory> getDirectories(String pathToDir);
+  File getFile (String pathToFile);
+  Future<bool> saveInFile(String pathToFile, Uint8List bytes);
+  Future<String> readFileAsString(String pathToFile);
+  Future<Uint8List> readFileAsBytes(String pathToFile);
 }

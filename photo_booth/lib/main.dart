@@ -5,25 +5,29 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:photo_booth/models/drawing_point.dart';
 import 'package:photo_booth/services/files_service.dart';
-import 'package:photo_booth/services/photobooth_format_service.dart';
+import 'package:photo_booth/services/photobooth_service.dart';
+import 'package:photo_booth/services/image_service.dart';
 import 'package:scoped_model/scoped_model.dart';
-import 'package:image_picker/image_picker.dart';
 import 'package:flutter/services.dart';
 
 import 'extensions/ui_extensions.dart';
 import 'scope_models/main_model.dart';
 
-Future<void> main() async {
-  runApp(
-    MaterialApp(
+void main() => runApp(PhotoboothApp());
+
+class PhotoboothApp extends StatelessWidget {
+  // This widget is the root of your application.
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
       theme: ThemeData(
         primarySwatch: Colors.blue,
       ),
       home: MyHomePage(
         title: 'Photo Booth App'
       )
-    ),
-  );
+    );
+  }
 }
 
 class MyHomePage extends StatefulWidget {
@@ -46,8 +50,8 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-
   GlobalKey canvasKey = GlobalKey();
+  FileService _fileService = FileService();
 
   @override
   void initState() {
@@ -66,8 +70,9 @@ class _MyHomePageState extends State<MyHomePage> {
     // than having to individually change instances of widgets.
     return ScopedModel(
       model: MainModel(
-        FileService(),
-        PhotoboothFormatService(FileService())
+        _fileService,
+        PhotoboothService(_fileService),
+        ImageService()
       ),
       child: Scaffold(
         appBar: AppBar(
@@ -94,13 +99,13 @@ class _MyHomePageState extends State<MyHomePage> {
                         child: Row(
                           children: <Widget>[
                             Opacity(
-                              opacity: model.previewState == CameraPreviewState.image ? 1.0 : 0.5,
+                              opacity: model.previewState == PreviewState.image ? 1.0 : 0.5,
                               child: Padding(
                                 padding: EdgeInsets.only(right: 10.0),
                                 child: FloatingActionButton(
                                   backgroundColor: model.selectedColor,
                                   onPressed: () {
-                                    if (model.previewState == CameraPreviewState.image)
+                                    if (model.previewState == PreviewState.image)
                                       showModalBottomSheet<void>(context: context, builder: (BuildContext context) {
                                         return Padding(
                                           padding: EdgeInsets.only(bottom: 30, left: 8, top: 8, right: 8),
@@ -126,10 +131,10 @@ class _MyHomePageState extends State<MyHomePage> {
                                 onSelected: (SourceOfImage result) async {
                                   switch (result) {
                                     case SourceOfImage.fromCamera:
-                                      model.getImage(ImageSource.camera);
+                                      model.getImage(SourceOfImage.fromCamera);
                                       break;
                                     case SourceOfImage.fromGallery:
-                                      model.getImage(ImageSource.gallery);
+                                      model.getImage(SourceOfImage.fromGallery);
                                       break;
                                     case SourceOfImage.fromDocuments:
                                       // model.getImage(ImageSource.gallery);
@@ -142,9 +147,9 @@ class _MyHomePageState extends State<MyHomePage> {
                                             child: ListView.builder(
                                               scrollDirection: Axis.vertical,
                                               shrinkWrap: true,
-                                              itemCount: model.documents.length,
+                                              itemCount: model.documentItems.length,
                                               itemBuilder: (context, index) {
-                                                final item = model.documents[index];
+                                                final item = model.documentItems[index];
                                                 return Column (
                                                   crossAxisAlignment: CrossAxisAlignment.start,
                                                   children: <Widget>[
@@ -192,7 +197,7 @@ class _MyHomePageState extends State<MyHomePage> {
                         child: Row(
                           children: <Widget>[
                             Opacity(
-                              opacity: model.previewState == CameraPreviewState.image ? 1.0 : 0.5,
+                              opacity: model.previewState == PreviewState.image ? 1.0 : 0.5,
                               child: Column(
                                 mainAxisSize: MainAxisSize.min,
                                 children: <Widget>[
@@ -200,7 +205,7 @@ class _MyHomePageState extends State<MyHomePage> {
                                     icon: Icon(Icons.fiber_new),
                                     tooltip: 'Clear work area',
                                     onPressed: () {
-                                      if (model.previewState == CameraPreviewState.image)
+                                      if (model.previewState == PreviewState.image)
                                         model.clear();
                                     }
                                   ),
@@ -209,9 +214,9 @@ class _MyHomePageState extends State<MyHomePage> {
                               ),
                             ),
                             Opacity(
-                              opacity: model.previewState == CameraPreviewState.image ? 1.0 : 0.5,
+                              opacity: model.previewState == PreviewState.image ? 1.0 : 0.5,
                               child: PopupMenuButton<ImageFormat>(
-                                enabled: model.previewState == CameraPreviewState.image,
+                                enabled: model.previewState == PreviewState.image,
                                 child: Column(
                                   mainAxisSize: MainAxisSize.min,
                                   children: <Widget>[
@@ -224,7 +229,7 @@ class _MyHomePageState extends State<MyHomePage> {
                                   ],
                                 ),
                                 onSelected: (ImageFormat result) async {
-                                  if (model.previewState == CameraPreviewState.image) {
+                                  if (model.previewState == PreviewState.image) {
                                     switch (result) {
                                       case ImageFormat.png:
                                         bool result = await model.saveToGallery(canvasKey);
@@ -408,7 +413,6 @@ class _DrawState extends State<Draw> {
           },
           onPanEnd: (details) {
             setState(() {
-              print("on pan end");
               model.points.add(null);
             });
           },
@@ -419,12 +423,12 @@ class _DrawState extends State<Draw> {
 
   _getPreviewWidget(MainModel model) {
     switch (model.previewState) {
-      case CameraPreviewState.empty:
+      case PreviewState.empty:
         return Center(
           child: Text('Please choose a picture for drawing.')
         );
         break;
-      case CameraPreviewState.image:
+      case PreviewState.image:
         return RepaintBoundary(
           key: widget.canvasKey,
           child: CustomPaint(

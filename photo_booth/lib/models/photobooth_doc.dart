@@ -12,6 +12,26 @@ class PhotoboothDocument {
 
   factory PhotoboothDocument.fromJson(Map<String, dynamic> json) => _$PhotoboothDocumentFromJson(json);
   Map<String, dynamic> toJson() => _$PhotoboothDocumentToJson(this);
+
+  factory PhotoboothDocument.createMock() {
+    var testDocument = PhotoboothDocument();
+    testDocument.widht = 10;
+    testDocument.height = 10;
+    testDocument.lines = List<PhotoboothLine>();
+    var line = PhotoboothLine();
+    line.color = 234234;
+    line.points = List<PhotoboothPoint>();
+    var firstPoint = PhotoboothPoint();
+    firstPoint.x = 1;
+    firstPoint.y = 1;
+    var secondPoint = PhotoboothPoint();
+    secondPoint.x = 2;
+    secondPoint.y = 2;
+    line.points.add(firstPoint);
+    line.points.add(secondPoint);
+    testDocument.lines.add(line);
+    return testDocument;
+  }
 }
 
 @JsonSerializable(explicitToJson: true)

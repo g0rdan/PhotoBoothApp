@@ -2,23 +2,30 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:ui';
 
-import 'package:path/path.dart';
 import 'package:intl/intl.dart';
 import 'package:photo_booth/models/photobooth_doc.dart';
 import 'package:photo_booth/services/files_service.dart';
 import 'package:photo_booth/models/drawing_point.dart';
+import 'package:photo_booth/extensions/ui_extensions.dart';
 
-import '../extensions/ui_extensions.dart';
+/// This service helps to convert drawing points of UI into custom format of this
+/// for saving it and reuse it later
+class PhotoboothService implements IPhotoboothService {
+  IFileService _filesService;
 
-class PhotoboothFormatService {
-
-  FileService _filesService;
-
-  PhotoboothFormatService(FileService filesService) {
-    _filesService = filesService;
+  PhotoboothService(IFileService filesService) {
+    _filesService = filesService ;
   }
 
   Future<bool> saveCanvasAsFile(String pathToImage, DrawingArea canvas) async {
+    if (pathToImage.isEmpty) {
+      print('PhotoboothFormatService.saveCanvasAsFile(): pathToImage can\'t be empty');
+      return false;
+    }
+    if (canvas == null) {
+      print('PhotoboothFormatService.saveCanvasAsFile(): canvas can\'t be null');
+      return false;
+    }
     try {
       var dateTime = DateTime.now();
       var formatter = new DateFormat('yyyy-MM-dd hh:mm:ss');
@@ -27,16 +34,15 @@ class PhotoboothFormatService {
       var docFodler = await _filesService.createDocumentFolder(name);
       // write original image to the fodler
       var imageFilename = '$name.png';
-      var imagePath = join(docFodler.path, imageFilename);
+      var imagePath = _filesService.join(docFodler.path, imageFilename);
       var tempBytes = await File(pathToImage).readAsBytes();
       await File(imagePath).writeAsBytes(tempBytes);
       // write canvas data to the fodler
       var canavsFilename = '$name.json';
       var canvasDoc = toPhotoboothFormat(canvas);
       var canvasJson = json.encode(canvasDoc);
-      var canvasPath = join(docFodler.path, canavsFilename);
+      var canvasPath = _filesService.join(docFodler.path, canavsFilename);
       await File(canvasPath).writeAsString(canvasJson);
-
       return true;
     } catch (e) {
       print(e);
@@ -57,7 +63,6 @@ class PhotoboothFormatService {
       print('PhotoboothFormatService.toPhotoboothFormat(): there is no canvas size');
       return null;
     }
-
     var document = PhotoboothDocument();
     document.widht = canvas.size.width;
     document.height = canvas.size.height;
@@ -84,17 +89,14 @@ class PhotoboothFormatService {
       print('PhotoboothFormatService.toDrawingPoints(): document is null');
       return null;
     }
-
     if (document.widht == 0 || document.height == 0) {
       print('PhotoboothFormatService.toDrawingPoints(): document\'s size si incorect');
       return null;
     }
-
     if (document.lines.isEmpty) {
       print('PhotoboothFormatService.toDrawingPoints(): there is no drawing points');
       return null;
     }
-
     var canvas = DrawingArea();
     canvas.size = Size(document.widht, document.height);
     canvas.points = new List<DrawingPoint>();
@@ -111,7 +113,7 @@ class PhotoboothFormatService {
     }
     return canvas;
   }
-
+  /// Takes first row of the elements (line) until the null element
   List<DrawingPoint> _getSlice(int index, List<DrawingPoint> points) {
     var slice = List<DrawingPoint>();
     for (int i = index; i < points.length; i++) {
@@ -122,4 +124,10 @@ class PhotoboothFormatService {
     }
     return slice;
   }
+}
+
+abstract class IPhotoboothService {
+  Future<bool> saveCanvasAsFile(String pathToImage, DrawingArea canvas);
+  PhotoboothDocument toPhotoboothFormat(DrawingArea canvas);
+  DrawingArea toDrawingPoints(PhotoboothDocument document);
 }
