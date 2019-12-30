@@ -10,4 +10,3 @@ class PaintHelper {
       ..strokeWidth = 3.0;
   }
 }
-
