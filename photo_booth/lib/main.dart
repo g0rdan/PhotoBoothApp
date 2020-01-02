@@ -3,11 +3,11 @@ import 'dart:ui';
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:photo_booth/services/files_service.dart';
 import 'package:photo_booth/services/photobooth_service.dart';
 import 'package:photo_booth/services/image_service.dart';
 import 'package:scoped_model/scoped_model.dart';
-import 'package:flutter/services.dart';
 
 import 'scope_models/main_model.dart';
 import 'ui/alert_view.dart';

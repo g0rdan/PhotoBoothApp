@@ -2,6 +2,7 @@ import 'dart:io';
 import 'dart:ui';
 
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:photo_booth/models/drawing_point.dart';
 import 'package:photo_booth/scope_models/main_model.dart';
@@ -19,7 +20,8 @@ class DrawCanvas extends StatefulWidget {
 }
 
 class _DrawCanvasState extends State<DrawCanvas> {
-  
+  int _count = 0;
+
   @override
   Widget build(BuildContext context) {
     return ScopedModelDescendant<MainModel>(
@@ -57,7 +59,34 @@ class _DrawCanvasState extends State<DrawCanvas> {
           },
           child: _getPreviewWidget(model)
         )
+        // RawGestureDetector(
+        //   behavior: HitTestBehavior.opaque,
+        //   gestures: <Type, GestureRecognizerFactory>{
+        //     ImmediateMultiDragGestureRecognizer: GestureRecognizerFactoryWithHandlers<ImmediateMultiDragGestureRecognizer>(
+        //           () => ImmediateMultiDragGestureRecognizer(),
+        //           (ImmediateMultiDragGestureRecognizer instance) {
+        //             instance
+        //               ..acceptGesture(2)
+        //               ..onStart = _handleOnStart;
+                      
+        //             }
+        //           ),
+        //       }
+        //     )
     );
+  }
+
+  Drag _handleOnStart(Offset position) {
+    _count++;
+    return _DragHandler(_handleDragUpdate, _handleDragEnd);
+  }
+
+  void _handleDragEnd(DragEndDetails details) {
+    _count--;
+  }
+    
+  void _handleDragUpdate(DragUpdateDetails details) {
+    print(_count);
   }
 
   _getPreviewWidget(MainModel model) {
@@ -81,6 +110,26 @@ class _DrawCanvasState extends State<DrawCanvas> {
       default:
     }
   }
+}
+
+class _DragHandler extends Drag {
+  _DragHandler(this.onUpdate, this.onEnd);
+
+  final GestureDragUpdateCallback onUpdate;
+  final GestureDragEndCallback onEnd;
+
+  @override
+  void update(DragUpdateDetails details) {
+   onUpdate(details);
+  }
+
+  @override
+  void end(DragEndDetails details) {
+    onEnd(details);
+  }
+
+  @override
+  void cancel(){}
 }
 
 class DrawingPainter extends CustomPainter {
