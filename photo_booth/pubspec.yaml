@@ -30,6 +30,7 @@ dependencies:
   gallery_saver : any
   json_annotation: any
   intl: any
+  uuid: any
 
 dev_dependencies:
   flutter_test:

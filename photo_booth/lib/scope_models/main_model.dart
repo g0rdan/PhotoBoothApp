@@ -30,6 +30,10 @@ class MainModel extends Model {
   List<DrawingPoint> _points = [];
   List<DrawingPoint> get points => _points;
 
+  List<String> touchGuids = [];
+
+  bool get has2FingersOnScreen => touchGuids.length == 2;
+
   Size _canvasSize = Size(0, 0);
   Size get canvasSize => _canvasSize;
   set canvasSize (Size newSize) {

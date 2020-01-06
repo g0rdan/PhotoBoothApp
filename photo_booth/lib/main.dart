@@ -8,8 +8,8 @@ import 'package:photo_booth/services/files_service.dart';
 import 'package:photo_booth/services/photobooth_service.dart';
 import 'package:photo_booth/services/image_service.dart';
 import 'package:scoped_model/scoped_model.dart';
+import 'package:photo_booth/scope_models/main_model.dart';
 
-import 'scope_models/main_model.dart';
 import 'ui/alert_view.dart';
 import 'ui/draw_canvas.dart';
 
@@ -287,7 +287,7 @@ class _MyHomePageState extends State<MyHomePage> {
                               ),
                             ),
                             Opacity(
-                              opacity: model.points.isEmpty ? 0.5 : 1.0,
+                              opacity: (model.previewState == PreviewState.empty || model.points.isEmpty) ? 0.5 : 1.0,
                               child: Column(
                                 mainAxisSize: MainAxisSize.min,
                                 children: <Widget>[
@@ -295,8 +295,7 @@ class _MyHomePageState extends State<MyHomePage> {
                                     icon: Icon(Icons.undo),
                                     tooltip: 'Undo changes in work area',
                                     onPressed: () {
-                                      if (model.points.isNotEmpty)
-                                        model.undo();
+                                      model.undo();
                                     }
                                   ),
                                   Text('Undo')
@@ -317,7 +316,7 @@ class _MyHomePageState extends State<MyHomePage> {
                         borderRadius: BorderRadius.circular(15.0),
                         color: Colors.grey[200]
                       ),
-                      child: DrawCanvas(canvasKey),
+                      child: DrawCanvas(canvasKey, model),
                     ),
                   )
                 )

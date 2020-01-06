@@ -8,85 +8,61 @@ import 'package:photo_booth/models/drawing_point.dart';
 import 'package:photo_booth/scope_models/main_model.dart';
 import 'package:photo_booth/extensions/ui_extensions.dart';
 import 'package:scoped_model/scoped_model.dart';
+import 'package:uuid/uuid.dart';
 
 /// Widget that helps drawing on the images
 class DrawCanvas extends StatefulWidget {
   GlobalKey canvasKey;
+  MainModel model;
 
-  DrawCanvas(this.canvasKey);
+  DrawCanvas(this.canvasKey, this.model);
 
   @override
   _DrawCanvasState createState() => _DrawCanvasState();
 }
 
 class _DrawCanvasState extends State<DrawCanvas> {
-  int _count = 0;
 
   @override
   Widget build(BuildContext context) {
     return ScopedModelDescendant<MainModel>(
       builder: (context, _, model) => 
-        GestureDetector(
-          onPanUpdate: (details) {
-            setState(() {
-              RenderBox renderBox = context.findRenderObject();
-              model.canvasSize = renderBox.size;
-              final currPoint = renderBox.globalToLocal(details.globalPosition);
-              if (currPoint.dx > 0 && currPoint.dy > 0 && currPoint.dx < renderBox.size.width && currPoint.dy < renderBox.size.height) {
-              final point = DrawingPoint(
-                  point: currPoint,
-                  paint: PaintHelper.getDeafultPaint(model.selectedColor));
-                model.addPoint(point);
-              }
-            });
-          },
-          onPanStart: (details) {
-            setState(() {
-              RenderBox renderBox = context.findRenderObject();
-              final currPoint = renderBox.globalToLocal(details.globalPosition);
-              if (currPoint.dx > 0 && currPoint.dy > 0 && currPoint.dx < renderBox.size.width && currPoint.dy < renderBox.size.height) {
-                final point = DrawingPoint(
-                  point: currPoint,
-                  paint: PaintHelper.getDeafultPaint(model.selectedColor));
-                model.addPoint(point);
-              }
-            });
-          },
-          onPanEnd: (details) {
-            setState(() {
-              model.points.add(null);
-            });
-          },
-          child: _getPreviewWidget(model)
+        RawGestureDetector(
+          behavior: HitTestBehavior.opaque,
+          gestures: <Type, GestureRecognizerFactory>{
+            ImmediateMultiDragGestureRecognizer: GestureRecognizerFactoryWithHandlers<ImmediateMultiDragGestureRecognizer>(
+              () => ImmediateMultiDragGestureRecognizer(),
+              (ImmediateMultiDragGestureRecognizer instance) {
+                instance
+                  ..acceptGesture(2)
+                  ..onStart = _handleOnStart;
+                }
+            ),
+          }, child: _getPreviewWidget(model),
         )
-        // RawGestureDetector(
-        //   behavior: HitTestBehavior.opaque,
-        //   gestures: <Type, GestureRecognizerFactory>{
-        //     ImmediateMultiDragGestureRecognizer: GestureRecognizerFactoryWithHandlers<ImmediateMultiDragGestureRecognizer>(
-        //           () => ImmediateMultiDragGestureRecognizer(),
-        //           (ImmediateMultiDragGestureRecognizer instance) {
-        //             instance
-        //               ..acceptGesture(2)
-        //               ..onStart = _handleOnStart;
-                      
-        //             }
-        //           ),
-        //       }
-        //     )
     );
   }
 
   Drag _handleOnStart(Offset position) {
-    _count++;
-    return _DragHandler(_handleDragUpdate, _handleDragEnd);
-  }
-
-  void _handleDragEnd(DragEndDetails details) {
-    _count--;
-  }
-    
-  void _handleDragUpdate(DragUpdateDetails details) {
-    print(_count);
+    final String id = Uuid().v4();
+    widget.model.touchGuids.add(id);
+    return _DragHandler(
+      (updateDetaild) {
+        RenderBox renderBox = context.findRenderObject();
+        final currPoint = renderBox.globalToLocal(updateDetaild.globalPosition);
+        if (currPoint.dx > 0 && currPoint.dy > 0 && currPoint.dx < renderBox.size.width && currPoint.dy < renderBox.size.height) {
+          final point = DrawingPoint(
+              point: currPoint,
+              paint: PaintHelper.getDeafultPaint(widget.model.selectedColor));
+          widget.model.addPoint(point);
+        }
+      },
+      (endDetaild) {
+        setState(() {
+          widget.model.addPoint(null);
+        });
+      }
+    );
   }
 
   _getPreviewWidget(MainModel model) {
@@ -113,10 +89,10 @@ class _DrawCanvasState extends State<DrawCanvas> {
 }
 
 class _DragHandler extends Drag {
-  _DragHandler(this.onUpdate, this.onEnd);
-
   final GestureDragUpdateCallback onUpdate;
   final GestureDragEndCallback onEnd;
+  
+  _DragHandler(this.onUpdate, this.onEnd);
 
   @override
   void update(DragUpdateDetails details) {
